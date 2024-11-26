@@ -52,9 +52,9 @@ polya_Server <- function(id, rvals){
           pic <- ggplot() +
                   geom_histogram(data = dt,
                                  aes(x = polya_length, color = sample_label, fill = sample_label),
-                                 fill = "white",
-                                 bins = 60,
-                                 position = "identity",
+                                 #fill = "white",
+                                 bins = 40,
+                                 position = "dodge",
                                  alpha = 0.5)
                   #scale_fill_brewer(palette="Dark2") +
                   #ggtitle("PolyA Length Distribution")
@@ -68,9 +68,10 @@ polya_Server <- function(id, rvals){
         if (nrow(dt) > 0){
           pic <- ggplot() +
             geom_boxplot(data = dt,
-                         aes(x = polya_length, y = sample_label, colour = sample_label)) + 
-            facet_wrap(vars(transcript_type), ncol = 4) + 
-            scale_fill_brewer(palette="Dark2")
+                         aes(x = polya_length, y = sample_label, colour = sample_label, fill = sample_label),
+                         alpha = 0.5) + 
+            facet_wrap(vars(transcript_type), ncol = 4)# + 
+            #scale_fill_brewer(palette="Dark2")
           
           pic
         }
@@ -82,8 +83,8 @@ polya_Server <- function(id, rvals){
           pic <- ggplot() +
             geom_beeswarm(data = dt,
                           aes(x = polya_length, y = sample_label, color = sample_label)) +
-            facet_wrap(vars(transcript_id), ncol = 4) +
-            scale_fill_brewer(palette="Dark2")
+            facet_wrap(vars(transcript_id), ncol = 4)# +
+            #scale_fill_brewer(palette="Dark2")
           
           pic
         }

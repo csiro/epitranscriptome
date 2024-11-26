@@ -59,7 +59,7 @@ server <- function(input, output) {
   
   # set max "upload" size ... since we're handling the upload manually, this is
   # just making sure the UI isn't always saying things are too big
-  options(shiny.maxRequestSize=30*1024^2)
+  options(shiny.maxRequestSize=300*1024^2)
 
   rvals <- reactiveValues(
     polya_rds = config$polya_rds,
