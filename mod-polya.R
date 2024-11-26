@@ -136,7 +136,9 @@ polya_Server <- function(id, rvals){
       observe({
         rvals$polya_rds
         print("doing the load...")
-        rvals$polya <- readRDS(rvals$polya_rds)
+        if (file.exists(rvals$polya_rds)){
+          rvals$polya <- readRDS(rvals$polya_rds) 
+        }
         print("...loaded")
       })
       
