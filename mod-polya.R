@@ -11,7 +11,6 @@ polya_UI <- function(id){
   sidebarLayout(
     sidebarPanel(
       fileInput(ns("polya_file"), "PolyA RDS"),
-      plotOutput(ns("legend"), height="200px"),
       selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
       selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
       selectizeInput(ns("transcripts"), 
@@ -21,6 +20,11 @@ polya_UI <- function(id){
                      options=list(placeholder="For fewer than a few genes..."))
     ),
     mainPanel(
+      fluidRow(
+        column(12,
+               plotOutput(ns("legend"), height="100px")
+        )
+      ),
       fluidRow(
         column(6,
           plotOutput(ns("histogram"))
@@ -121,7 +125,7 @@ polya_Server <- function(id, rvals){
                                  bins = 40,
                                  position = "dodge",
                                  alpha = 0.5) +
-                  theme(legend.position="none")
+                  theme(legend.position="none") +
                   #scale_fill_brewer(palette="Dark2") +
                   ggtitle("PolyA Length Histogram")
           
@@ -154,7 +158,7 @@ polya_Server <- function(id, rvals){
           pic <- ggplot() +
             geom_beeswarm(data = dt,
                           aes(x = polya_length, y = sample_label, color = sample_label)) +
-            facet_wrap(vars(transcript_id), ncol = 4) +
+            facet_wrap(~ transcript_id + transcript_type, ncol = 4, labeller = label_value) +
             theme(legend.position="none",
                   axis.text.y = element_blank(), 
                   axis.ticks.y = element_blank(), 
@@ -167,7 +171,7 @@ polya_Server <- function(id, rvals){
       })
       
       output$box_summary <- renderPlot({
-        dt <- dt_summary(10, 10)
+        dt <- dt_summary(100, 10)
         if (nrow(dt) > 0){
           pic <- ggplot() +
             geom_boxplot(data = dt,

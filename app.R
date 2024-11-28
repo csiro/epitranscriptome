@@ -8,10 +8,12 @@
 #
 
 library(shiny)
+library(bslib)
 library(shinyFiles)
 library(jsonlite)
 library(data.table)
-library(DT)
+#library(plotly)
+#library(DT)
 
 # global config file, it's fine...
 config_file <- "config.json"
