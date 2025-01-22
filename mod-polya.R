@@ -13,10 +13,10 @@ polya_UI <- function(id){
       fileInput(ns("polya_file"), "PolyA RDS"),
       selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
       selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
-      selectizeInput(ns("transcripts"), 
-                     label="Transcripts", 
-                     choices=NULL, 
-                     multiple=TRUE, 
+      selectizeInput(ns("transcripts"),
+                     label="Transcripts",
+                     choices=NULL,
+                     multiple=TRUE,
                      options=list(placeholder="For fewer than a few genes..."))
     ),
     mainPanel(

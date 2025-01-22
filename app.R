@@ -20,40 +20,28 @@ config_file <- "config.json"
 config <- fromJSON(config_file)
 
 source("mod-polya.R")
+source("mod-methyl.R")
 
 #metadata <- read.csv(config$metadata_path)
 
-# Define UI for application that draws a histogram
-ui <- navbarPage("Epitranscriptome",
-
-    # Application title
-    #titlePanel("Epitranscriptome"),
-    # tabPanel( "Sample Data",
-    #   sidebarLayout(
-    #       sidebarPanel(
-    #           #fileInput("metadata", "Load Metadata"),
-    #           selectInput("control", "Reference (Control) Sample", choices = metadata$Sample_ID),
-    #           selectInput("compare", "Compare Sample(s)", choices = metadata$Sample_ID, multiple = TRUE)
-    #       ),
-    #       mainPanel(
-    #         DTOutput("info")
-    #       )
-    #   )
+# Define UI for application 
+ui <- page_navbar(title = "Epitranscriptome",
+    # sidebar = sidebar(
+    #   fileInput("polya_file", "PolyA RDS"),
+    #   selectizeInput("transcript_type", label="Transcript Types", choices = NULL, multiple = TRUE),
+    #   selectizeInput("genes", label="Genes", choices=NULL, multiple=TRUE),
+    #   selectizeInput("transcripts", 
+    #                  label="Transcripts", 
+    #                  choices=NULL, 
+    #                  multiple=TRUE, 
+    #                  options=list(placeholder="For fewer than a few genes..."))
     # ),
-    tabPanel( "PolyA",
-             polya_UI("polya")
-      # sidebarLayout(
-      #   sidebarPanel(
-      #     shinyDirButton("polya_dir", label = "Input Path", title = "Select"),
-      #     verbatimTextOutput("polya_dir", placeholder = TRUE),
-      #     textOutput("polya_control"),
-      #     textOutput("polya_compare"),
-      #     actionButton("polya_load", "Load")
-      #   ),
-      #   mainPanel(
-      #     DTOutput("polya")
-      #   )
-    )
+    nav_panel(title = "PolyA",
+             polya_UI("polya")),
+    nav_panel(title = "m5C",
+             methyl_UI("m5C")),
+    nav_panel(title = "m6A",
+             methyl_UI("m6A"))
 )
 
 
@@ -66,12 +54,16 @@ server <- function(input, output) {
   rvals <- reactiveValues(
     polya_rds = config$polya_rds,
     polya = data.table(),
+    methyl_rds = config$methyl_rds,
+    methyl = data.table(),
     genes = list(),
     transcript_types = list(),
     transcripts = list()
   )
 
   polya_Server("polya", rvals)
+  methyl_server("m5C", rvals)
+  methyl_server("m6A", rvals)
 }
 
 # Run the application 
