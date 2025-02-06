@@ -13,6 +13,7 @@ polya_UI <- function(id){
       fileInput(ns("polya_file"), "PolyA RDS"),
       selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
       selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
+      fileInput(ns("gene_list"), "Gene List"),
       selectizeInput(ns("transcripts"),
                      label="Transcripts",
                      choices=NULL,
@@ -228,6 +229,17 @@ polya_Server <- function(id, rvals){
         rvals$polya_rds <- input$polya_file$datapath
       })
       
+      # TEMP ... upload a gene list
+      observeEvent(input$gene_list, {
+        print("gene list touched")
+        gl_file <- input$gene_list$datapath
+        gl_df <- read.csv(gl_file)
+        gene_list <- unique(gl_df$x)
+        print(gene_list)
+        updateSelectizeInput(session, "genes", choices=unique(rvals$polya$gene_id), selected=gl_df$x, server = TRUE)
+        #rvals$genes <- gene_list
+      })
+      
       # new file to upload ... load it
       # note that we have this as seperate from observe(input$polya_file)
       # to detect the initial value
@@ -245,6 +257,11 @@ polya_Server <- function(id, rvals){
         rvals$polya
         ttypes <- unique(rvals$polya$transcript_type)
         gene_list <- unique(rvals$polya$gene_id)
+        # TEMP ... output a sample of the genes...
+        gene_samp <- sample(gene_list, 1200)
+        #gene_samp_df <- data.frame(genes = unlist(gene_samp))
+        write.csv(gene_samp, file="genes1200.csv", sep=",", row.names=FALSE, quote=FALSE)
+        # ... Eo TEMP
         updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
         updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
       })
