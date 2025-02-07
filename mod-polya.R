@@ -280,9 +280,8 @@ polya_Server <- function(id, rvals){
         ttypes <- unique(rvals$polya$transcript_type)
         gene_list <- unique(rvals$polya$gene_id)
         # TEMP ... output a sample of the genes...
-        #gene_samp <- sample(gene_list, 1200)
-        #gene_samp_df <- data.frame(genes = unlist(gene_samp))
-        #write.csv(gene_samp, file="genes1200.csv", sep=",", row.names=FALSE, quote=FALSE)
+        gene_samp <- sample(gene_list, 50)
+        capture.output(cat(paste0(gene_samp, collapse=',')), file="genes50.csv")
         # ... Eo TEMP
         updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
         updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
