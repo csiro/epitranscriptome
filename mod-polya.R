@@ -36,10 +36,21 @@ polya_UI <- function(id){
       ),
       fluidRow(
         column(6, 
-          plotOutput(ns("box_summary"))
+          plotOutput(ns("box_summary")),
+          fluidRow(
+            column(6,
+                   numericInput(ns("box_maxn"), "Max Number of Box Plots", value=10, min=0, max=20, step=1)
+            ),
+            column(6,
+                   numericInput(ns("contigs_thres"), "Min Samples per Contig", value=10, min=0, max=100, step=1)
+                   )
+          ),
         ),
         column(6,
-          plotOutput(ns("swarm"))
+          plotOutput(ns("swarm")),
+          fluidRow(
+            numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=12, min=0, max=48, step=1)
+          )
         )
       )
     )
@@ -68,29 +79,37 @@ polya_Server <- function(id, rvals){
       }
       
       dt_summary <- function(contig_count_thres, n_to_plot){
-        dt <- rvals$polya
+        dt <- dt_subset()
         if (nrow(dt) > 0){
-          if (length(rvals$transcript_types) > 0){
-            dt <- dt[transcript_type %in% rvals$transcript_types]
-          } 
-
           labels <- unique(dt$sample_label)
           
-          polyA_summary <- dt[, .(contig_count = .N, 
-                                  mean_polya_length = mean(polya_length)), 
-                                  by = .(contig, sample_label)]
-          # reject mean lengths with too few samples
-          polyA_summary <- polyA_summary[contig_count > contig_count_thres]
-          # re-cast so that each summary_label is its own column with the mean_polya_length values
-          polyA_summary_wide <- dcast(polyA_summary, 
-                                      contig ~ sample_label, 
-                                      value.var = 'mean_polya_length')
-          # get the difference between the mean lengths for the first two samples (we're assuming a control is in sample[[1]] ... adjust for other pair-wise comparisons)
-          polyA_summary_wide <- polyA_summary_wide[, mean_length_delta := abs(get(labels[[1]]) - get(labels[[2]]))]
-          # sort
-          polyA_summary_wide <- polyA_summary_wide[order(mean_length_delta, decreasing = TRUE)]
-          differing_contigs <- unique(polyA_summary_wide[1:n_to_plot, contig])
-          dt <- dt[contig %in% differing_contigs, ]
+          if (length(labels) > 1){
+            polyA_summary <- dt[, .(contig_count = .N, 
+                                    mean_polya_length = mean(polya_length)), 
+                                    by = .(contig, sample_label)]
+            # reject mean lengths with too few samples
+            polyA_summary <- polyA_summary[contig_count > contig_count_thres]
+            # re-cast so that each sample_label is its own column with the mean_polya_length values
+            polyA_summary_wide <- dcast(polyA_summary, 
+                                        contig ~ sample_label, 
+                                        value.var = 'mean_polya_length')
+            if (ncol(polyA_summary_wide) > 1)
+            {
+              # get the difference between the mean lengths for the first two samples 
+              #(we're assuming a control is in sample[[1]] ... adjust for other pair-wise comparisons)
+              # we need two columns here...
+              polyA_summary_wide <- polyA_summary_wide[, mean_length_delta := abs(get(labels[[1]]) - get(labels[[2]]))]
+              # sort
+              polyA_summary_wide <- polyA_summary_wide[order(mean_length_delta, decreasing = TRUE)]
+              differing_contigs <- unique(polyA_summary_wide[1:n_to_plot, contig])
+              dt <- dt[contig %in% differing_contigs, ]
+            } else {
+              dt <- data.table()
+            }
+          } else {
+            # return an empty table
+            dt <- data.table()
+          }
         }
         return (dt)
       }
@@ -155,7 +174,7 @@ polya_Server <- function(id, rvals){
       
       output$swarm <- renderPlot({
         dt <- dt_subset()
-        if ((nrow(dt) > 0) && (length(rvals$transcripts) > 0)){
+        if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$swarm_maxn)){
           pic <- ggplot() +
             geom_beeswarm(data = dt,
                           aes(x = polya_length, y = sample_label, color = sample_label)) +
@@ -165,14 +184,14 @@ polya_Server <- function(id, rvals){
                   axis.ticks.y = element_blank(), 
                   axis.title.y = element_blank()) +
             #scale_fill_brewer(palette="Dark2")
-            ggtitle("PolyA Lengths per Transcript")
+            ggtitle("Raw PolyA Lengths per Transcript")
           
           pic
         }
       })
       
       output$box_summary <- renderPlot({
-        dt <- dt_summary(100, 10)
+        dt <- dt_summary(input$contigs_thres, input$box_maxn)
         if (nrow(dt) > 0){
           pic <- ggplot() +
             geom_boxplot(data = dt,
@@ -181,7 +200,7 @@ polya_Server <- function(id, rvals){
             facet_wrap(vars(transcript_type), ncol = 4) +
             theme(legend.position="none") + 
             #scale_fill_brewer(palette="Dark2")
-            ggtitle("Top 10 Mean Length Delta Transcripts")
+            ggtitle("Top Mean Length Delta Transcripts")
           
           pic
         }
@@ -258,9 +277,9 @@ polya_Server <- function(id, rvals){
         ttypes <- unique(rvals$polya$transcript_type)
         gene_list <- unique(rvals$polya$gene_id)
         # TEMP ... output a sample of the genes...
-        gene_samp <- sample(gene_list, 1200)
+        #gene_samp <- sample(gene_list, 1200)
         #gene_samp_df <- data.frame(genes = unlist(gene_samp))
-        write.csv(gene_samp, file="genes1200.csv", sep=",", row.names=FALSE, quote=FALSE)
+        #write.csv(gene_samp, file="genes1200.csv", sep=",", row.names=FALSE, quote=FALSE)
         # ... Eo TEMP
         updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
         updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
