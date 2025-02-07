@@ -49,7 +49,7 @@ polya_UI <- function(id){
         column(6,
           plotOutput(ns("swarm")),
           fluidRow(
-            numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=12, min=0, max=48, step=1)
+            numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=20, min=0, max=96, step=1)
           )
         )
       )
@@ -186,6 +186,9 @@ polya_Server <- function(id, rvals){
             #scale_fill_brewer(palette="Dark2")
             ggtitle("Raw PolyA Lengths per Transcript")
           
+          pic
+        } else {
+          pic <- ggplot() + ggtitle(paste0("(Waiting for no more than ", input$swarm_maxn, " transcripts)"))
           pic
         }
       })
