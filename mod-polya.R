@@ -267,7 +267,7 @@ polya_Server <- function(id, rvals){
         #gl_df <- read.csv(gl_file)
         gene_list <- colnames(read_csv(gl_file))
         print(gene_list)
-        updateSelectizeInput(session, "genes", choices=unique(rvals$polya$gene_id), selected=gl_df$x, server = TRUE)
+        updateSelectizeInput(session, "genes", choices=unique(rvals$polya$gene_id), selected=gene_list, server = TRUE)
         #rvals$genes <- gene_list
       })
       
