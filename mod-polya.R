@@ -9,56 +9,40 @@ polya_UI <- function(id){
   
   ns <- NS(id)
   
-  # sidebarLayout(
-  #   sidebarPanel(
-  #     fileInput(ns("polya_file"), "PolyA RDS"),
-  #     selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
-  #     selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
-  #     fileInput(ns("gene_list"), "Gene List"),
-  #     selectizeInput(ns("transcripts"),
-  #                    label="Transcripts",
-  #                    choices=NULL,
-  #                    multiple=TRUE,
-  #                    options=list(placeholder="For fewer than a few genes..."))
-  #   ),
-  #  mainPanel(
   fluidPage(
-      fluidRow(
-        column(12,
-               plotOutput(ns("legend"), height="100px")
-        ),
-        # column(8, 
-        #        tableOutput(ns("summary_table"))
-        # )
+    fluidRow(
+      column(12,
+             plotOutput(ns("legend"), height="100px")
       ),
-      fluidRow(
-        column(6,
-          plotOutput(ns("histogram"))
-        ),
-        column(6,
-          plotOutput(ns("box"))
-        )
+    ),
+    fluidRow(
+      column(6,
+        plotOutput(ns("histogram"))
       ),
-      fluidRow(
-        column(6, 
-          plotOutput(ns("box_summary")),
-          fluidRow(
-            column(6,
-                   numericInput(ns("box_maxn"), "Max Number of Box Plots", value=10, min=0, max=20, step=1)
-            ),
-            column(6,
-                   numericInput(ns("contigs_thres"), "Min Samples per Contig", value=10, min=0, max=100, step=1)
-                   )
+      column(6,
+        plotOutput(ns("box"))
+      )
+    ),
+    fluidRow(
+      column(6, 
+        plotOutput(ns("box_summary")),
+        fluidRow(
+          column(6,
+                 numericInput(ns("box_maxn"), "Max Number of Box Plots", value=10, min=0, max=20, step=1)
           ),
+          column(6,
+                 numericInput(ns("contigs_thres"), "Min Samples per Contig", value=10, min=0, max=100, step=1)
+                 )
         ),
-        column(6,
-          plotOutput(ns("swarm")),
-          fluidRow(
-            numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=20, min=0, max=96, step=1)
-          )
+      ),
+      column(6,
+        plotOutput(ns("swarm")),
+        fluidRow(
+          numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=20, min=0, max=96, step=1)
         )
       )
     )
+  )
 }
 
 polya_Server <- function(id, rvals){
@@ -216,84 +200,6 @@ polya_Server <- function(id, rvals){
           
           pic
         }
-      })
-      
-      observeEvent(input$transcript_type, {
-        print("transcript type selected:")
-        rvals$transcript_types <- if (is.null(input$transcript_type)){ list() } else { input$transcript_type }
-        print(rvals$transcript_types)
-        
-        if (nrow(rvals$polya) > 0){
-          if (length(rvals$transcript_types) > 0){
-            gene_list <- unique(rvals$polya[transcript_type %in% rvals$transcript_types]$gene_id)
-          }  else {
-            gene_list <- unique(rvals$polya$gene_id)
-          }
-          updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
-        }
-      }, ignoreNULL = FALSE)
-      
-      # for the genes selectizeInput, we want to be able to detect when all 
-      # entries have been cleared == NULL
-      observeEvent(input$genes, {
-        print("genes selected:")
-        rvals$genes <- if (is.null(input$genes)){ list() } else { input$genes }
-        if ((length(rvals$genes) < 24) && (length(rvals$genes) > 0)){
-          transcript_list <- unique(rvals$polya[gene_id %in% rvals$genes, transcript_id])
-          updateSelectizeInput(session, "transcripts", choices=transcript_list, selected=NULL, server = TRUE)
-        } else {
-          updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
-        }
-        print(rvals$genes)
-      }, ignoreNULL = FALSE)
-      
-      observeEvent(input$transcripts, {
-        print("transcripts selected:")
-        rvals$transcripts <- if (is.null(input$transcripts)){ list() } else { input$transcripts }
-        print(rvals$transcripts)
-      }, ignoreNULL = FALSE)
-      
-      # user input for the polya file name
-      observeEvent(input$polya_file, {
-        print("polya file touched")
-        print(input$polya_file)
-        rvals$polya_rds <- input$polya_file$datapath
-      })
-      
-      # TEMP ... upload a gene list
-      observeEvent(input$gene_list, {
-        print("gene list touched")
-        gl_file <- input$gene_list$datapath
-        #gl_df <- read.csv(gl_file)
-        gene_list <- colnames(read_csv(gl_file))
-        print(gene_list)
-        updateSelectizeInput(session, "genes", choices=unique(rvals$polya$gene_id), selected=gene_list, server = TRUE)
-        #rvals$genes <- gene_list
-      })
-      
-      # new file to upload ... load it
-      # note that we have this as seperate from observe(input$polya_file)
-      # to detect the initial value
-      observe({
-        rvals$polya_rds
-        print("doing the load...")
-        if (file.exists(rvals$polya_rds)){
-          rvals$polya <- readRDS(rvals$polya_rds) 
-        }
-        print("...loaded")
-      })
-      
-      # whole new file, reset everything
-      observe({
-        rvals$polya
-        ttypes <- unique(rvals$polya$transcript_type)
-        gene_list <- unique(rvals$polya$gene_id)
-        # TEMP ... output a sample of the genes...
-        gene_samp <- sample(gene_list, 50)
-        capture.output(cat(paste0(gene_samp, collapse=',')), file="genes50.csv")
-        # ... Eo TEMP
-        updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
-        updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
       })
     }
   )
