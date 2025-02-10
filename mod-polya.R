@@ -9,19 +9,20 @@ polya_UI <- function(id){
   
   ns <- NS(id)
   
-  sidebarLayout(
-    sidebarPanel(
-      fileInput(ns("polya_file"), "PolyA RDS"),
-      selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
-      selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
-      fileInput(ns("gene_list"), "Gene List"),
-      selectizeInput(ns("transcripts"),
-                     label="Transcripts",
-                     choices=NULL,
-                     multiple=TRUE,
-                     options=list(placeholder="For fewer than a few genes..."))
-    ),
-    mainPanel(
+  # sidebarLayout(
+  #   sidebarPanel(
+  #     fileInput(ns("polya_file"), "PolyA RDS"),
+  #     selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
+  #     selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
+  #     fileInput(ns("gene_list"), "Gene List"),
+  #     selectizeInput(ns("transcripts"),
+  #                    label="Transcripts",
+  #                    choices=NULL,
+  #                    multiple=TRUE,
+  #                    options=list(placeholder="For fewer than a few genes..."))
+  #   ),
+  #  mainPanel(
+  fluidPage(
       fluidRow(
         column(12,
                plotOutput(ns("legend"), height="100px")
@@ -58,7 +59,6 @@ polya_UI <- function(id){
         )
       )
     )
-  )
 }
 
 polya_Server <- function(id, rvals){
