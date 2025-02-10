@@ -16,7 +16,12 @@ methyl_UI <- function(id){
                      options=list(placeholder="For fewer than a few genes..."))
     ),
     mainPanel(
-      plotOutput(ns('metacoord')),
+      fluidRow(
+        plotOutput(ns('legend'), height="100px")
+      ),
+      fluidRow(
+        plotOutput(ns('metacoord'))
+      ),
       fluidRow(
         column(6,
                plotOutput(ns("gene_density"))
@@ -72,12 +77,36 @@ methyl_server <- function(id, rvals){
         return (out_ratio)
       }
       
+      output$legend <- renderPlot({
+        if (nrow(rvals$methyl) > 0)
+        {
+          pic <- ggplot(rvals$methyl, aes(sample_label, fill = sample_label)) +
+            geom_bar(alpha = 0.5)# + 
+          # theme(panel.grid = element_blank(),
+          #       axis.title = element_blank(),
+          #       axis.text = element_blank(),
+          #       axis.ticks = element_blank(),
+          #       panel.background = element_blank()) 
+          
+          # stealing the legend (stolen from https://stackoverflow.com/questions/12041042/how-to-plot-just-the-legends-in-ggplot2/12041779#12041779)
+          tmp <- ggplot_gtable(ggplot_build(pic))
+          leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+          legend <- tmp$grobs[[leg]]
+          
+          grid.newpage()
+          grid.draw(legend)
+        }
+      })
+      
       output$metacoord <- renderPlot({
         dt <- out_ratio_subset()
         fig <- ggplot(dt, aes(x = metacoord_interval,
-                                     y = metacoord_sig_ratio, 
-                                     color = sample_label)) +
-          geom_line(alpha = 0.4, size = 0.6) +
+                              y = metacoord_sig_ratio, 
+                              color = sample_label)) +
+          geom_point() +
+          geom_smooth() +
+          #geom_line(alpha = 0.4, size = 0.6) +
+          theme(legend.position="none") + 
           ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate"))
         
         fig
@@ -91,7 +120,8 @@ methyl_server <- function(id, rvals){
             geom_point() +
             geom_smooth() + 
             geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
-            facet_grid(rows = vars(transcript_id), cols = vars(gene_id)) + 
+            facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
+            theme(legend.position="none") +
             ggtitle(paste0(id, " Rolling Average Methylation Density"))
           
           fig
@@ -104,9 +134,10 @@ methyl_server <- function(id, rvals){
           fig <- ggplot(dt[gene_id %in% rvals$genes],
                         aes(x = position, y = sample_label, color = methylated)) +
             geom_beeswarm(size = 1, cex = 1, priority = "density") +
-            guides(color = 'none') +
+            #guides(color = 'none') +
             geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
-            facet_grid(rows = vars(transcript_id), cols = vars(gene_id)) +
+            facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
+            #theme(legend.position="none") +
             ggtitle(paste0(id, " Methylation Sites"))
           
           fig

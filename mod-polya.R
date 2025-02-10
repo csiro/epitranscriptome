@@ -3,6 +3,7 @@ library(ggplot2)
 library(grid)
 library(ggbeeswarm)
 library(shinyFiles)
+library(readr)
 
 polya_UI <- function(id){
   
@@ -24,7 +25,10 @@ polya_UI <- function(id){
       fluidRow(
         column(12,
                plotOutput(ns("legend"), height="100px")
-        )
+        ),
+        # column(8, 
+        #        tableOutput(ns("summary_table"))
+        # )
       ),
       fluidRow(
         column(6,
@@ -113,6 +117,11 @@ polya_Server <- function(id, rvals){
         }
         return (dt)
       }
+      
+      # output$summary_table <- renderTable({
+      #   dt <- dt_subset()
+      #   dt[, .(read_count = .N, mean_polyA_length = mean(polya_length), var_polya_length = var(polya_length)), by = .(sample_label, transcript_type)]
+      # })
       
       output$legend <- renderPlot({
         if (nrow(rvals$polya) > 0)
@@ -255,8 +264,8 @@ polya_Server <- function(id, rvals){
       observeEvent(input$gene_list, {
         print("gene list touched")
         gl_file <- input$gene_list$datapath
-        gl_df <- read.csv(gl_file)
-        gene_list <- unique(gl_df$x)
+        #gl_df <- read.csv(gl_file)
+        gene_list <- colnames(read_csv(gl_file))
         print(gene_list)
         updateSelectizeInput(session, "genes", choices=unique(rvals$polya$gene_id), selected=gl_df$x, server = TRUE)
         #rvals$genes <- gene_list
