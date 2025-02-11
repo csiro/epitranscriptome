@@ -46,6 +46,7 @@ server <- function(input, output) {
   rvals <- reactiveValues(
     polya_rds = config$polya_rds,
     polya = data.table(),
+    polya_subset = data.table(),
     methyl_rds = config$methyl_rds,
     methyl = data.table(),
     genes = list(),

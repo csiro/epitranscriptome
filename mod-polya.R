@@ -52,22 +52,22 @@ polya_Server <- function(id, rvals){
       
       ns <- session$ns
       
-      dt_subset <- function(){
-        dt <- rvals$polya
-        if (nrow(dt) > 0){
-          if (length(rvals$transcripts) > 0){
-            dt <- dt[transcript_id %in% rvals$transcripts]
-          } else if (length(rvals$genes) > 0){
-            dt <- dt[gene_id %in% rvals$genes]
-          } else if (length(rvals$transcript_types) > 0){
-            dt <- dt[transcript_type %in% rvals$transcript_types]
-          }
-        }
-        return (dt)
-      }
+      # dt_subset <- function(){
+      #   dt <- rvals$polya
+      #   if (nrow(dt) > 0){
+      #     if (length(rvals$transcripts) > 0){
+      #       dt <- dt[transcript_id %in% rvals$transcripts]
+      #     } else if (length(rvals$genes) > 0){
+      #       dt <- dt[gene_id %in% rvals$genes]
+      #     } else if (length(rvals$transcript_types) > 0){
+      #       dt <- dt[transcript_type %in% rvals$transcript_types]
+      #     }
+      #   }
+      #   return (dt)
+      # }
       
       dt_summary <- function(contig_count_thres, n_to_plot){
-        dt <- dt_subset()
+        dt <- rvals$polya_subset
         if (nrow(dt) > 0){
           labels <- unique(dt$sample_label)
           
@@ -89,8 +89,17 @@ polya_Server <- function(id, rvals){
               polyA_summary_wide <- polyA_summary_wide[, mean_length_delta := abs(get(labels[[1]]) - get(labels[[2]]))]
               # sort
               polyA_summary_wide <- polyA_summary_wide[order(mean_length_delta, decreasing = TRUE)]
-              differing_contigs <- unique(polyA_summary_wide[1:n_to_plot, contig])
+              differing_contigs <- polyA_summary_wide[1:n_to_plot, contig]
+              # ...ok this is awks. subset the full dataframe to the differing_contigs list
               dt <- dt[contig %in% differing_contigs, ]
+              # now add back in the index from the list
+              dt <- dt[, ord := match(contig, differing_contigs)]
+              # and re-order
+              dt <- dt[order(ord)]
+              # and lock in the order as a factor
+              dt$transcript_id <- as.factor(as.vector(dt$transcript_id))
+              #levels(dt$transcript_id) <- differing_contigs
+              print(dt)
             } else {
               dt <- data.table()
             }
@@ -129,7 +138,7 @@ polya_Server <- function(id, rvals){
       })
       
       output$histogram <- renderPlot({
-        dt <- dt_subset()
+        dt <- rvals$polya_subset
         if (nrow(dt) > 0){
           pic <- ggplot() +
                   geom_histogram(data = dt,
@@ -147,7 +156,7 @@ polya_Server <- function(id, rvals){
       })
       
       output$box <- renderPlot({
-        dt <- dt_subset()
+        dt <- rvals$polya_subset
         if (nrow(dt) > 0){
           pic <- ggplot() +
             geom_boxplot(data = dt,
@@ -166,7 +175,7 @@ polya_Server <- function(id, rvals){
       })
       
       output$swarm <- renderPlot({
-        dt <- dt_subset()
+        dt <- rvals$polya_subset
         if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$swarm_maxn)){
           pic <- ggplot() +
             geom_beeswarm(data = dt,
