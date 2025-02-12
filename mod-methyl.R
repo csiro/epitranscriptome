@@ -4,31 +4,30 @@ methyl_UI <- function(id){
   
   ns <- NS(id)
   
-  sidebarLayout(
-    sidebarPanel(
-      fileInput(ns("methyl_file"), "Methylation RDS"),
-      selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
-      selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
-      selectizeInput(ns("transcripts"),
-                     label="Transcripts",
-                     choices=NULL,
-                     multiple=TRUE,
-                     options=list(placeholder="For fewer than a few genes..."))
+  # sidebarLayout(
+  #   sidebarPanel(
+  #     fileInput(ns("methyl_file"), "Methylation RDS"),
+  #     selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
+  #     selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
+  #     selectizeInput(ns("transcripts"),
+  #                    label="Transcripts",
+  #                    choices=NULL,
+  #                    multiple=TRUE,
+  #                    options=list(placeholder="For fewer than a few genes..."))
+  #   ),
+  fluidPage(
+    fluidRow(
+      plotOutput(ns('legend'), height="100px")
     ),
-    mainPanel(
-      fluidRow(
-        plotOutput(ns('legend'), height="100px")
+    fluidRow(
+      plotOutput(ns('metacoord'))
+    ),
+    fluidRow(
+      column(6,
+             plotOutput(ns("gene_density"))
       ),
-      fluidRow(
-        plotOutput(ns('metacoord'))
-      ),
-      fluidRow(
-        column(6,
-               plotOutput(ns("gene_density"))
-        ),
-        column(6,
-               plotOutput(ns("gene_swarm"))
-        )
+      column(6,
+             plotOutput(ns("gene_swarm"))
       )
     )
   )
@@ -42,17 +41,17 @@ methyl_server <- function(id, rvals){
       ns <- session$ns
       
       dt_subset <- function(){
-        dt <- rvals$methyl
-        dt <- dt[meth_type == id]
-        if (nrow(dt) > 0){
-          if (length(rvals$transcripts) > 0){
-            dt <- dt[transcript_id %in% rvals$transcripts]
-          } else if (length(rvals$genes) > 0){
-            dt <- dt[gene_id %in% rvals$genes]
-          } else if (length(rvals$transcript_types) > 0){
-            dt <- dt[transcript_type %in% rvals$transcript_types]
-          }
-        }
+        dt <- rvals$methyl_subset[meth_type == id]
+        #dt <- dt[meth_type == id]
+        # if (nrow(dt) > 0){
+        #   if (length(rvals$transcripts) > 0){
+        #     dt <- dt[transcript_id %in% rvals$transcripts]
+        #   } else if (length(rvals$genes) > 0){
+        #     dt <- dt[gene_id %in% rvals$genes]
+        #   } else if (length(rvals$transcript_types) > 0){
+        #     dt <- dt[transcript_type %in% rvals$transcript_types]
+        #   }
+        # }
         return (dt)
       }
       
@@ -150,74 +149,74 @@ methyl_server <- function(id, rvals){
       })
       
       # user input for the methylation file name
-      observeEvent(input$methyl_file, {
-        print("methyl file touched")
-        print(input$methyl_file)
-        rvals$methyl_rds <- input$methyl_file$datapath
-      })
-      
-      observeEvent(input$transcript_type, {
-        print("transcript type selected:")
-        rvals$transcript_types <- if (is.null(input$transcript_type)){ list() } else { input$transcript_type }
-        print(rvals$transcript_types)
-        
-        if (nrow(rvals$methyl) > 0){
-          if (length(rvals$transcript_types) > 0){
-            gene_list <- unique(rvals$methyl[transcript_type %in% rvals$transcript_types]$gene_id)
-          }  else {
-            gene_list <- unique(rvals$methyl$gene_id)
-          }
-          updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
-        }
-      }, ignoreNULL = FALSE)
-      
-      # for the genes selectizeInput, we want to be able to detect when all 
-      # entries have been cleared == NULL
-      observeEvent(input$genes, {
-        print("genes selected:")
-        rvals$genes <- if (is.null(input$genes)){ list() } else { input$genes }
-        if ((length(rvals$genes) < 24) && (length(rvals$genes) > 0)){
-          transcript_list <- unique(rvals$methyl[gene_id %in% rvals$genes, transcript_id])
-          updateSelectizeInput(session, "transcripts", choices=transcript_list, selected=NULL, server = TRUE)
-        } else {
-          updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
-        }
-        print(rvals$genes)
-      }, ignoreNULL = FALSE)
-      
-      observeEvent(input$transcripts, {
-        print("transcripts selected:")
-        rvals$transcripts <- if (is.null(input$transcripts)){ list() } else { input$transcripts }
-        print(rvals$transcripts)
-      }, ignoreNULL = FALSE)
-      
-      # user input for the methyl file name
-      observeEvent(input$methyl_file, {
-        print("methyl file touched")
-        print(input$methyl_file)
-        rvals$methyl_rds <- input$methyl_file$datapath
-      })
-      
-      # new file to upload ... load it
-      # note that we have this as seperate from observe(input$methyl_file)
-      # to detect the initial value
-      observe({
-        rvals$methyl_rds
-        print("doing the methyl load...")
-        if (file.exists(rvals$methyl_rds)){
-          rvals$methyl <- readRDS(rvals$methyl_rds) 
-        }
-        print("...loaded")
-      })
-      
-      # whole new file, reset everything
-      observe({
-        rvals$methyl
-        ttypes <- unique(rvals$methyl$transcript_type)
-        gene_list <- unique(rvals$methyl$gene_id)
-        updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
-        updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
-      })
+      # observeEvent(input$methyl_file, {
+      #   print("methyl file touched")
+      #   print(input$methyl_file)
+      #   rvals$methyl_rds <- input$methyl_file$datapath
+      # })
+      # 
+      # observeEvent(input$transcript_type, {
+      #   print("transcript type selected:")
+      #   rvals$transcript_types <- if (is.null(input$transcript_type)){ list() } else { input$transcript_type }
+      #   print(rvals$transcript_types)
+      #   
+      #   if (nrow(rvals$methyl) > 0){
+      #     if (length(rvals$transcript_types) > 0){
+      #       gene_list <- unique(rvals$methyl[transcript_type %in% rvals$transcript_types]$gene_id)
+      #     }  else {
+      #       gene_list <- unique(rvals$methyl$gene_id)
+      #     }
+      #     updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
+      #   }
+      # }, ignoreNULL = FALSE)
+      # 
+      # # for the genes selectizeInput, we want to be able to detect when all 
+      # # entries have been cleared == NULL
+      # observeEvent(input$genes, {
+      #   print("genes selected:")
+      #   rvals$genes <- if (is.null(input$genes)){ list() } else { input$genes }
+      #   if ((length(rvals$genes) < 24) && (length(rvals$genes) > 0)){
+      #     transcript_list <- unique(rvals$methyl[gene_id %in% rvals$genes, transcript_id])
+      #     updateSelectizeInput(session, "transcripts", choices=transcript_list, selected=NULL, server = TRUE)
+      #   } else {
+      #     updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
+      #   }
+      #   print(rvals$genes)
+      # }, ignoreNULL = FALSE)
+      # 
+      # observeEvent(input$transcripts, {
+      #   print("transcripts selected:")
+      #   rvals$transcripts <- if (is.null(input$transcripts)){ list() } else { input$transcripts }
+      #   print(rvals$transcripts)
+      # }, ignoreNULL = FALSE)
+      # 
+      # # user input for the methyl file name
+      # observeEvent(input$methyl_file, {
+      #   print("methyl file touched")
+      #   print(input$methyl_file)
+      #   rvals$methyl_rds <- input$methyl_file$datapath
+      # })
+      # 
+      # # new file to upload ... load it
+      # # note that we have this as seperate from observe(input$methyl_file)
+      # # to detect the initial value
+      # observe({
+      #   rvals$methyl_rds
+      #   print("doing the methyl load...")
+      #   if (file.exists(rvals$methyl_rds)){
+      #     rvals$methyl <- readRDS(rvals$methyl_rds) 
+      #   }
+      #   print("...loaded")
+      # })
+      # 
+      # # whole new file, reset everything
+      # observe({
+      #   rvals$methyl
+      #   ttypes <- unique(rvals$methyl$transcript_type)
+      #   gene_list <- unique(rvals$methyl$gene_id)
+      #   updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
+      #   updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
+      # })
     }
   )
 }

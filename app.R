@@ -30,10 +30,10 @@ ui <- page_navbar(title = "Epitranscriptome",
     sidebar = sidebar(InFilter_UI("in_filter"), width=400),
     nav_panel(title = "PolyA",
              polya_UI("polya")),
-    # nav_panel(title = "m5C",
-    #          methyl_UI("m5C")),
-    # nav_panel(title = "m6A",
-    #          methyl_UI("m6A"))
+    nav_panel(title = "m5C",
+             methyl_UI("m5C")),
+    nav_panel(title = "m6A",
+             methyl_UI("m6A"))
 )
 
 
@@ -49,6 +49,7 @@ server <- function(input, output) {
     polya_subset = data.table(),
     methyl_rds = config$methyl_rds,
     methyl = data.table(),
+    methyl_subset = data.table(),
     genes = list(),
     transcript_types = list(),
     transcripts = list()
@@ -56,8 +57,8 @@ server <- function(input, output) {
 
   polya_Server("polya", rvals)
   InFilter_Server("in_filter", rvals)
-  #methyl_server("m5C", rvals)
-  #methyl_server("m6A", rvals)
+  methyl_server("m5C", rvals)
+  methyl_server("m6A", rvals)
 }
 
 # Run the application 

@@ -64,6 +64,25 @@ InFilter_Server <- function(id, rvals){
         rvals$polya_subset <- dt 
       }
       
+      # some copy pasta here ... unless there's some way of passing 
+      # rvals$DT by reference?
+      filter_methyl <- function(){
+        print("in filter_methyl")
+        isolate({
+          dt <- copy(rvals$methyl)
+          if (nrow(dt) > 0){
+            if (length(rvals$transcripts) > 0){
+              dt <- dt[transcript_id %in% rvals$transcripts]
+            } else if (length(rvals$genes) > 0){
+              dt <- dt[gene_id %in% rvals$genes]
+            } else if (length(rvals$transcript_types) > 0){
+              dt <- dt[transcript_type %in% rvals$transcript_types]
+            }
+          }
+        })
+        rvals$methyl_subset <- dt 
+      }
+      
       observeEvent(input$transcript_type, {
         print("transcript type selected:")
         rvals$transcript_types <- if (is.null(input$transcript_type)){ list() } else { input$transcript_type }
@@ -83,6 +102,7 @@ InFilter_Server <- function(id, rvals){
         }
         updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
         filter_polya()
+        filter_methyl()
       }, ignoreNULL = FALSE)
       
       # for the genes selectizeInput, we want to be able to detect when all 
@@ -108,6 +128,7 @@ InFilter_Server <- function(id, rvals){
           updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
         }
         filter_polya()
+        filter_methyl()
       }, ignoreNULL = FALSE)
       
       # upload a gene list
@@ -125,6 +146,7 @@ InFilter_Server <- function(id, rvals){
         print(rvals$transcripts)
         # every other input will cause input$transcripts to be touched, subset here
         filter_polya()
+        filter_methyl()
       }, ignoreNULL = FALSE)
       
       # user input for the polya file name
@@ -152,6 +174,16 @@ InFilter_Server <- function(id, rvals){
         print("...loaded")
       })
       
+      # another copy pasta :/
+      observe({
+        rvals$methyl_rds
+        print("doing the methyl load...")
+        if (file.exists(rvals$methyl_rds)){
+          rvals$methyl <- readRDS(rvals$methyl_rds)
+        }
+        print("...loaded")
+      })
+      
       # whole new file(s), reset everything
       observe({
         print("rvals touched")
@@ -163,6 +195,7 @@ InFilter_Server <- function(id, rvals){
         updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
         updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
         filter_polya()
+        filter_methyl()
       })
       
     }
