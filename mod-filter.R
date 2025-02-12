@@ -78,6 +78,8 @@ InFilter_Server <- function(id, rvals){
             } else if (length(rvals$transcript_types) > 0){
               dt <- dt[transcript_type %in% rvals$transcript_types]
             }
+            # make a categorical out of the methylated field
+            dt$methylated_cat <- factor(dt$methylated, levels=c(1,0), labels=c("methylated", "unmethylated"))
           }
         })
         rvals$methyl_subset <- dt 
@@ -186,15 +188,28 @@ InFilter_Server <- function(id, rvals){
       
       # whole new file(s), reset everything
       observe({
-        print("rvals touched")
+        print("polya touched")
         rvals$polya
-        rvals$methyl
+        #rvals$methyl
         ttypes <- get_all_transcript_types()
         gene_list <- get_all_genes()
         updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
         updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
         updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
         filter_polya()
+        #filter_methyl()
+      })
+      
+      observe({
+        print("methyl touched")
+        #rvals$polya
+        rvals$methyl
+        ttypes <- get_all_transcript_types()
+        gene_list <- get_all_genes()
+        updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
+        updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
+        updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
+        #filter_polya()
         filter_methyl()
       })
       

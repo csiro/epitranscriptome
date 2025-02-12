@@ -96,10 +96,8 @@ polya_Server <- function(id, rvals){
               dt <- dt[, ord := match(contig, differing_contigs)]
               # and re-order
               dt <- dt[order(ord)]
-              # and lock in the order as a factor
+              # and bake in the order as a factor for transcript_id
               dt$transcript_id <- factor(dt$transcript_id, levels=rev(unique(dt$transcript_id)))
-              #levels(dt$transcript_id) <- differing_contigs
-              print(dt)
             } else {
               dt <- data.table()
             }
