@@ -27,7 +27,7 @@ source("mod-filter.R")
 
 # Define UI for application 
 ui <- page_navbar(title = "Epitranscriptome",
-    sidebar = sidebar(InFilter_UI("in_filter")),
+    sidebar = sidebar(InFilter_UI("in_filter"), width=400),
     nav_panel(title = "PolyA",
              polya_UI("polya")),
     # nav_panel(title = "m5C",
