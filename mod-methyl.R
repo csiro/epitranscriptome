@@ -6,7 +6,7 @@ methyl_UI <- function(id){
   
   fluidPage(
     fluidRow(
-      plotOutput(ns('legend'), height="100px")
+      plotOutput(ns('legend'), height="50px")
     ),
     fluidRow(
       column(9,

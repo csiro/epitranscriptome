@@ -12,7 +12,7 @@ polya_UI <- function(id){
   fluidPage(
     fluidRow(
       column(12,
-             plotOutput(ns("legend"), height="100px")
+             plotOutput(ns("legend"), height="50px")
       ),
     ),
     fluidRow(
