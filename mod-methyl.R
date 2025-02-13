@@ -4,32 +4,29 @@ methyl_UI <- function(id){
   
   ns <- NS(id)
   
-  sidebarLayout(
-    sidebarPanel(
-      fileInput(ns("methyl_file"), "Methylation RDS"),
-      selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
-      selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
-      selectizeInput(ns("transcripts"),
-                     label="Transcripts",
-                     choices=NULL,
-                     multiple=TRUE,
-                     options=list(placeholder="For fewer than a few genes..."))
+  fluidPage(
+    fluidRow(
+      plotOutput(ns('legend'), height="100px")
     ),
-    mainPanel(
-      fluidRow(
-        plotOutput(ns('legend'), height="100px")
-      ),
-      fluidRow(
+    fluidRow(
+      column(9,
         plotOutput(ns('metacoord'))
       ),
-      fluidRow(
-        column(6,
-               plotOutput(ns("gene_density"))
-        ),
-        column(6,
-               plotOutput(ns("gene_swarm"))
-        )
+      column(3,
+        numericInput(ns("sig_thres"), "Significance Threshold", value=0.8, min=0, max=1, step=0.01),
+        numericInput(ns("steps"), "Intervals", value=120, min=1, max=3000, step=10)
       )
+    ),
+    fluidRow(
+      column(6,
+             plotOutput(ns("gene_density"))
+      ),
+      column(6,
+             plotOutput(ns("gene_swarm"))
+      ),
+    ),
+    fluidRow(
+      numericInput(ns("plots_maxn"), "Max Number of Raw Plots", value=20, min=0, max=100, step=1)
     )
   )
 }
@@ -42,38 +39,40 @@ methyl_server <- function(id, rvals){
       ns <- session$ns
       
       dt_subset <- function(){
-        dt <- rvals$methyl
-        dt <- dt[meth_type == id]
-        if (nrow(dt) > 0){
-          if (length(rvals$transcripts) > 0){
-            dt <- dt[transcript_id %in% rvals$transcripts]
-          } else if (length(rvals$genes) > 0){
-            dt <- dt[gene_id %in% rvals$genes]
-          } else if (length(rvals$transcript_types) > 0){
-            dt <- dt[transcript_type %in% rvals$transcript_types]
-          }
-        }
+        dt <- rvals$methyl_subset[meth_type == id]
         return (dt)
       }
       
       out_ratio_subset <- function(){
         dt <- dt_subset()
-        metacoord_breaks <- seq(0, 3, 0.025)
+        out_ratio <- data.table()
         
-        # out_ratio <- methyl[, interval := cut(transcript_metacoordinate, metacoord_breaks, include.lowest = TRUE, right = TRUE, labels = FALSE)][, .(n =  .N), by = .(interval, meth_type, sample_label)][, dcast(.SD, interval ~ filter, value.var = "n", fill = 0)][, ratio := sig / (sig + ns)]
+        prob_thres <- input$sig_thres
+        steps <- if (input$steps > 0){ 3 / input$steps } else { 1 }
         
-        # add a new categorical interval label based on metacoordinate
-        out_ratio <- dt[, metacoord_interval := cut(transcript_metacoordinate, metacoord_breaks, include.lowest = TRUE, right = TRUE, labels = FALSE)]
-        
-        # aggregate by metacoordinate, meth_type, sample_label (ie. over all contigs)
-        out_ratio <- out_ratio[, .(n = .N, sig = sum(methylated)), by = .(metacoord_interval, meth_type, sample_label)]
-        
-        out_ratio <- na.omit(out_ratio)
-        
-        #out_ratio <- out_ratio[, metacoord_sig_sites := sum(methylated), by = .(metacoord_interval, meth_type, sample_label)]
-        
-        out_ratio <- out_ratio[, metacoord_sig_ratio := sig / n, by = .(metacoord_interval, meth_type, sample_label)]
-        
+        if (nrow(dt) > 0){
+          metacoord_breaks <- seq(0, 3, steps)
+          
+          # out_ratio <- methyl[, interval := cut(transcript_metacoordinate, metacoord_breaks, include.lowest = TRUE, right = TRUE, labels = FALSE)][, .(n =  .N), by = .(interval, meth_type, sample_label)][, dcast(.SD, interval ~ filter, value.var = "n", fill = 0)][, ratio := sig / (sig + ns)]
+          
+          # add a new categorical interval label based on metacoordinate
+          out_ratio <- dt[, metacoord_interval := cut(transcript_metacoordinate, metacoord_breaks, include.lowest = TRUE, right = TRUE, labels = FALSE)]
+          
+          #out_ratio <- out_ratio[, metacoordinate := 3 * metacoord_interval / steps]
+          
+          out_ratio <- out_ratio[, methylated := ifelse( (probability >= prob_thres), 1, 0)]
+          
+          #print(summary(out_ratio))
+          
+          # aggregate by metacoordinate, sample_label (ie. over all contigs)
+          out_ratio <- out_ratio[, .(n = .N, sig = sum(methylated), metacoordinate = mean(transcript_metacoordinate)), by = .(metacoord_interval, sample_label)]
+          
+          out_ratio <- na.omit(out_ratio)
+          
+          #out_ratio <- out_ratio[, metacoord_sig_sites := sum(methylated), by = .(metacoord_interval, meth_type, sample_label)]
+          
+          out_ratio <- out_ratio[, metacoord_sig_ratio := sig / n, by = .(metacoord_interval, sample_label)]
+        }
         return (out_ratio)
       }
       
@@ -100,26 +99,37 @@ methyl_server <- function(id, rvals){
       
       output$metacoord <- renderPlot({
         dt <- out_ratio_subset()
-        fig <- ggplot(dt, aes(x = metacoord_interval,
-                              y = metacoord_sig_ratio, 
-                              color = sample_label)) +
-          geom_point() +
-          geom_smooth() +
-          #geom_line(alpha = 0.4, size = 0.6) +
-          theme(legend.position="none") + 
-          ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate"))
-        
-        fig
+        if (nrow(dt) > 0){
+          fig <- ggplot(dt, aes(x = metacoordinate, #metacoord_interval,
+                                y = metacoord_sig_ratio, 
+                                color = sample_label)) +
+            xlim(0,3) +
+            geom_point() +
+            geom_smooth() +
+            annotate("segment", x = 1, xend = 2, y = 0, yend = 0, color = "black", size = 2) + 
+            annotate("label", x = 1.5, y = 0, label = "CDS", color = "black", size = 3) +
+            annotate("label", x = 0.5, y = 0, label = "5' UTR", color = "black", size = 3) + 
+            annotate("label", x = 2.5, y = 0, label = "3' UTR", color = "black", size = 3) +
+            #geom_line(alpha = 0.4, size = 0.6) +
+            theme(legend.position="none") + 
+            ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate"))
+          
+          fig
+        }
       })
       
       output$gene_density <- renderPlot({
         dt <- dt_subset()
-        if ((nrow(dt) > 0) && (length(rvals$genes) > 0)){
+        if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$plots_maxn)){
           fig <- ggplot(dt[gene_id %in% rvals$genes],
                         aes(x = position, y = rolling_meth_density_normed, color = sample_label)) + 
             geom_point() +
             geom_smooth() + 
             geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
+            geom_segment(aes(x = cds_start, xend = cds_end, y = -2, yend = -2, color = NULL), size = 2) + 
+            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = -2), label = "CDS", color = "black", size = 3) +
+            geom_label(aes(x = cds_start/2, y = -2), label = "5' UTR", color = "black", size = 3) + 
+            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = -2), label = "3' UTR", color = "black", size = 3) +
             facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
             theme(legend.position="none") +
             ggtitle(paste0(id, " Rolling Average Methylation Density"))
@@ -130,10 +140,11 @@ methyl_server <- function(id, rvals){
       
       output$gene_swarm <- renderPlot({
         dt <- dt_subset()
-        if ((nrow(dt) > 0) && (length(rvals$genes) > 0)){
+        if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$plots_maxn)){
           fig <- ggplot(dt[gene_id %in% rvals$genes],
-                        aes(x = position, y = sample_label, color = methylated)) +
+                        aes(x = position, y = sample_label, color = methylated_cat)) +
             geom_beeswarm(size = 1, cex = 1, priority = "density") +
+            scale_color_brewer(palette = "Set1") +
             #guides(color = 'none') +
             geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
             facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
@@ -147,76 +158,6 @@ methyl_server <- function(id, rvals){
       output$table_out <- renderDT({
         dt <- dt_subset()
         dt
-      })
-      
-      # user input for the methylation file name
-      observeEvent(input$methyl_file, {
-        print("methyl file touched")
-        print(input$methyl_file)
-        rvals$methyl_rds <- input$methyl_file$datapath
-      })
-      
-      observeEvent(input$transcript_type, {
-        print("transcript type selected:")
-        rvals$transcript_types <- if (is.null(input$transcript_type)){ list() } else { input$transcript_type }
-        print(rvals$transcript_types)
-        
-        if (nrow(rvals$methyl) > 0){
-          if (length(rvals$transcript_types) > 0){
-            gene_list <- unique(rvals$methyl[transcript_type %in% rvals$transcript_types]$gene_id)
-          }  else {
-            gene_list <- unique(rvals$methyl$gene_id)
-          }
-          updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
-        }
-      }, ignoreNULL = FALSE)
-      
-      # for the genes selectizeInput, we want to be able to detect when all 
-      # entries have been cleared == NULL
-      observeEvent(input$genes, {
-        print("genes selected:")
-        rvals$genes <- if (is.null(input$genes)){ list() } else { input$genes }
-        if ((length(rvals$genes) < 24) && (length(rvals$genes) > 0)){
-          transcript_list <- unique(rvals$methyl[gene_id %in% rvals$genes, transcript_id])
-          updateSelectizeInput(session, "transcripts", choices=transcript_list, selected=NULL, server = TRUE)
-        } else {
-          updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
-        }
-        print(rvals$genes)
-      }, ignoreNULL = FALSE)
-      
-      observeEvent(input$transcripts, {
-        print("transcripts selected:")
-        rvals$transcripts <- if (is.null(input$transcripts)){ list() } else { input$transcripts }
-        print(rvals$transcripts)
-      }, ignoreNULL = FALSE)
-      
-      # user input for the methyl file name
-      observeEvent(input$methyl_file, {
-        print("methyl file touched")
-        print(input$methyl_file)
-        rvals$methyl_rds <- input$methyl_file$datapath
-      })
-      
-      # new file to upload ... load it
-      # note that we have this as seperate from observe(input$methyl_file)
-      # to detect the initial value
-      observe({
-        rvals$methyl_rds
-        print("doing the methyl load...")
-        if (file.exists(rvals$methyl_rds)){
-          rvals$methyl <- readRDS(rvals$methyl_rds) 
-        }
-        print("...loaded")
-      })
-      
-      # whole new file, reset everything
-      observe({
-        rvals$methyl
-        ttypes <- unique(rvals$methyl$transcript_type)
-        gene_list <- unique(rvals$methyl$gene_id)
-        updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
-        updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
       })
     }
   )

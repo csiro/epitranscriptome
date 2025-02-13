@@ -21,21 +21,13 @@ config <- fromJSON(config_file)
 
 source("mod-polya.R")
 source("mod-methyl.R")
+source("mod-filter.R")
 
 #metadata <- read.csv(config$metadata_path)
 
 # Define UI for application 
 ui <- page_navbar(title = "Epitranscriptome",
-    # sidebar = sidebar(
-    #   fileInput("polya_file", "PolyA RDS"),
-    #   selectizeInput("transcript_type", label="Transcript Types", choices = NULL, multiple = TRUE),
-    #   selectizeInput("genes", label="Genes", choices=NULL, multiple=TRUE),
-    #   selectizeInput("transcripts", 
-    #                  label="Transcripts", 
-    #                  choices=NULL, 
-    #                  multiple=TRUE, 
-    #                  options=list(placeholder="For fewer than a few genes..."))
-    # ),
+    sidebar = sidebar(InFilter_UI("in_filter"), width=400),
     nav_panel(title = "PolyA",
              polya_UI("polya")),
     nav_panel(title = "m5C",
@@ -54,14 +46,17 @@ server <- function(input, output) {
   rvals <- reactiveValues(
     polya_rds = config$polya_rds,
     polya = data.table(),
+    polya_subset = data.table(),
     methyl_rds = config$methyl_rds,
     methyl = data.table(),
+    methyl_subset = data.table(),
     genes = list(),
     transcript_types = list(),
     transcripts = list()
   )
 
   polya_Server("polya", rvals)
+  InFilter_Server("in_filter", rvals)
   methyl_server("m5C", rvals)
   methyl_server("m6A", rvals)
 }
