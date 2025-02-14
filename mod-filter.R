@@ -60,8 +60,8 @@ InFilter_Server <- function(id, rvals){
               dt <- dt[transcript_type %in% rvals$transcript_types]
             }
           }
+          rvals$polya_subset <- dt 
         })
-        rvals$polya_subset <- dt 
       }
       
       # some copy pasta here ... unless there's some way of passing 
@@ -81,8 +81,9 @@ InFilter_Server <- function(id, rvals){
             # make a categorical out of the methylated field
             dt$methylated_cat <- factor(dt$methylated, levels=c(1,0), labels=c("methylated", "unmethylated"))
           }
+          rvals$methyl_subset <- dt 
+          print(summary(rvals$methyl_subset))
         })
-        rvals$methyl_subset <- dt 
       }
       
       observeEvent(input$transcript_type, {
@@ -161,7 +162,7 @@ InFilter_Server <- function(id, rvals){
       observeEvent(input$methyl_file, {
         print("methyl file touched")
         print(input$methyl_file)
-        rvals$methyl_rds <- input$polya_file$datapath
+        rvals$methyl_rds <- input$methyl_file$datapath
       })
       
       # new file to upload ... load it
@@ -171,7 +172,9 @@ InFilter_Server <- function(id, rvals){
         rvals$polya_rds
         print("doing the polya load...")
         if (file.exists(rvals$polya_rds)){
-          rvals$polya <- readRDS(rvals$polya_rds) 
+          dt <- readRDS(rvals$polya_rds)
+        } else {
+          print("polya file doesn't exist")
         }
         print("...loaded")
       })
@@ -182,14 +185,15 @@ InFilter_Server <- function(id, rvals){
         print("doing the methyl load...")
         if (file.exists(rvals$methyl_rds)){
           rvals$methyl <- readRDS(rvals$methyl_rds)
+          print(summary(rvals$methyl))
         }
         print("...loaded")
       })
       
       # whole new file(s), reset everything
       observe({
-        print("polya touched")
         rvals$polya
+        print("polya touched")
         #rvals$methyl
         ttypes <- get_all_transcript_types()
         gene_list <- get_all_genes()
@@ -201,9 +205,10 @@ InFilter_Server <- function(id, rvals){
       })
       
       observe({
-        print("methyl touched")
         #rvals$polya
         rvals$methyl
+        print("methyl touched")
+        print(summary(rvals$methyl))
         ttypes <- get_all_transcript_types()
         gene_list <- get_all_genes()
         updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
