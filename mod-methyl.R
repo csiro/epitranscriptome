@@ -1,4 +1,4 @@
-library(DT)
+#library(DT)
 
 methyl_UI <- function(id){
   
@@ -39,7 +39,10 @@ methyl_server <- function(id, rvals){
       ns <- session$ns
       
       dt_subset <- function(){
-        dt <- rvals$methyl_subset[meth_type == id]
+        dt <- data.table()
+        if (nrow(rvals$methyl_subset) > 0){
+          dt <- rvals$methyl_subset[meth_type == id]
+        }
         return (dt)
       }
       
@@ -155,10 +158,10 @@ methyl_server <- function(id, rvals){
         }
       })
       
-      output$table_out <- renderDT({
-        dt <- dt_subset()
-        dt
-      })
+      # output$table_out <- renderDT({
+      #   dt <- dt_subset()
+      #   dt
+      # })
     }
   )
 }

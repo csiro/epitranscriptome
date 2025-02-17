@@ -2,7 +2,7 @@
 library(ggplot2)
 library(grid)
 library(ggbeeswarm)
-library(shinyFiles)
+#library(shinyFiles)
 library(readr)
 
 polya_UI <- function(id){
