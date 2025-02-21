@@ -27,7 +27,7 @@ source("mod-filter.R")
 
 # Define UI for application 
 ui <- page_navbar(title = "Epitranscriptome",
-    sidebar = sidebar(InFilter_UI("in_filter"), width=400),
+    sidebar = sidebar(InFilter_UI("in_filter"), width=300),
     nav_panel(title = "PolyA",
              polya_UI("polya")),
     nav_panel(title = "m5C",
@@ -41,7 +41,7 @@ server <- function(input, output) {
   
   # set max "upload" size ... since we're handling the upload manually, this is
   # just making sure the UI isn't always saying things are too big
-  options(shiny.maxRequestSize=300*1024^2)
+  options(shiny.maxRequestSize=500*1024^2)
 
   rvals <- reactiveValues(
     polya_rds = config$polya_rds,
@@ -52,7 +52,9 @@ server <- function(input, output) {
     methyl_subset = data.table(),
     genes = list(),
     transcript_types = list(),
-    transcripts = list()
+    transcripts = list(),
+    save_svg_path = config$save_svg_path,
+    save_svgs = FALSE
   )
 
   polya_Server("polya", rvals)

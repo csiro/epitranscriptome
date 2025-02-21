@@ -52,20 +52,6 @@ polya_Server <- function(id, rvals){
       
       ns <- session$ns
       
-      # dt_subset <- function(){
-      #   dt <- rvals$polya
-      #   if (nrow(dt) > 0){
-      #     if (length(rvals$transcripts) > 0){
-      #       dt <- dt[transcript_id %in% rvals$transcripts]
-      #     } else if (length(rvals$genes) > 0){
-      #       dt <- dt[gene_id %in% rvals$genes]
-      #     } else if (length(rvals$transcript_types) > 0){
-      #       dt <- dt[transcript_type %in% rvals$transcript_types]
-      #     }
-      #   }
-      #   return (dt)
-      # }
-      
       dt_summary <- function(contig_count_thres, n_to_plot){
         dt <- rvals$polya_subset
         if (nrow(dt) > 0){
@@ -109,23 +95,21 @@ polya_Server <- function(id, rvals){
         return (dt)
       }
       
-      # output$summary_table <- renderTable({
-      #   dt <- dt_subset()
-      #   dt[, .(read_count = .N, mean_polyA_length = mean(polya_length), var_polya_length = var(polya_length)), by = .(sample_label, transcript_type)]
-      # })
+      save_now <- function(pic, filename){
+        if (rvals$save_svgs){
+          ggsave(paste0(rvals$save_svg_path, filename),
+                 plot=pic, width=297, height=210, units="mm")
+        }
+      }
       
       output$legend <- renderPlot({
         if (nrow(rvals$polya) > 0)
         {
           pic <- ggplot(rvals$polya, aes(sample_label, fill = sample_label)) +
-                 geom_bar(alpha = 0.5)# + 
-                 # theme(panel.grid = element_blank(),
-                 #       axis.title = element_blank(),
-                 #       axis.text = element_blank(),
-                 #       axis.ticks = element_blank(),
-                 #       panel.background = element_blank()) 
-          
-          # stealing the legend (stolen from https://stackoverflow.com/questions/12041042/how-to-plot-just-the-legends-in-ggplot2/12041779#12041779)
+                 geom_bar(alpha = 0.5)
+
+          # stealing just the legend from the pic
+          # (stolen from https://stackoverflow.com/questions/12041042/how-to-plot-just-the-legends-in-ggplot2/12041779#12041779)
           tmp <- ggplot_gtable(ggplot_build(pic))
           leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
           legend <- tmp$grobs[[leg]]
@@ -145,10 +129,11 @@ polya_Server <- function(id, rvals){
                                  bins = 40,
                                  position = "dodge",
                                  alpha = 0.5) +
-                  theme(legend.position="none") +
-                  #scale_fill_brewer(palette="Dark2") +
                   ggtitle("PolyA Length Histogram")
           
+          save_now(pic, "polya_histogram.svg")
+          
+          pic <- pic + theme(legend.position="none")
           pic
         }
       })
@@ -161,13 +146,14 @@ polya_Server <- function(id, rvals){
                          aes(x = polya_length, y = sample_label, color = sample_label, fill = sample_label),
                          alpha = 0.5) + 
             facet_wrap(vars(transcript_type), ncol = 4) + 
-            theme(legend.position="none",
-                  axis.text.y = element_blank(), 
+            theme(axis.text.y = element_blank(), 
                   axis.ticks.y = element_blank(), 
                   axis.title.y = element_blank()) +
-            #scale_fill_brewer(palette="Dark2")
             ggtitle("PolyA Lengths per Transcript Type")
           
+          save_now(pic, "polya_box_per_type.svg")
+          
+          pic <- pic + theme(legend.position="none")
           pic
         }
       })
@@ -179,13 +165,11 @@ polya_Server <- function(id, rvals){
             geom_beeswarm(data = dt,
                           aes(x = polya_length, y = sample_label, color = sample_label)) +
             facet_wrap(~ transcript_id + transcript_type, ncol = 4, labeller = label_value) +
-            theme(legend.position="none",
-                  axis.text.y = element_blank(), 
-                  axis.ticks.y = element_blank(), 
-                  axis.title.y = element_blank()) +
-            #scale_fill_brewer(palette="Dark2")
             ggtitle("Raw PolyA Lengths per Transcript")
           
+          save_now(pic, "polya_swarm_per_transcript.svg")
+          
+          pic <- pic + theme(legend.position="none")
           pic
         } else {
           pic <- ggplot() + ggtitle(paste0("(Waiting for no more than ", input$swarm_maxn, " transcripts)"))
@@ -201,10 +185,12 @@ polya_Server <- function(id, rvals){
                          aes(x = polya_length, y = transcript_id, color = sample_label, fill = sample_label),
                          alpha = 0.5) + 
             facet_wrap(vars(transcript_type), ncol = 4) +
-            theme(legend.position="none") + 
             #scale_fill_brewer(palette="Dark2")
             ggtitle("Top Mean Length Delta Transcripts")
           
+          save_now(pic, "polya_box_per_transcript.svg")
+          
+          pic <- pic + theme(legend.position="none")
           pic
         }
       })

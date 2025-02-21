@@ -79,6 +79,13 @@ methyl_server <- function(id, rvals){
         return (out_ratio)
       }
       
+      save_now <- function(pic, filename){
+        if (rvals$save_svgs){
+          ggsave(paste0(rvals$save_svg_path, filename),
+                 plot=pic, width=297, height=210, units="mm")
+        }
+      }
+      
       output$legend <- renderPlot({
         if (nrow(rvals$methyl) > 0)
         {
@@ -103,20 +110,24 @@ methyl_server <- function(id, rvals){
       output$metacoord <- renderPlot({
         dt <- out_ratio_subset()
         if (nrow(dt) > 0){
+          label_y <- -max(dt$metacoord_sig_ratio) / 8
+          
           fig <- ggplot(dt, aes(x = metacoordinate, #metacoord_interval,
                                 y = metacoord_sig_ratio, 
                                 color = sample_label)) +
             xlim(0,3) +
             geom_point() +
             geom_smooth() +
-            annotate("segment", x = 1, xend = 2, y = 0, yend = 0, color = "black", size = 2) + 
-            annotate("label", x = 1.5, y = 0, label = "CDS", color = "black", size = 3) +
-            annotate("label", x = 0.5, y = 0, label = "5' UTR", color = "black", size = 3) + 
-            annotate("label", x = 2.5, y = 0, label = "3' UTR", color = "black", size = 3) +
-            #geom_line(alpha = 0.4, size = 0.6) +
-            theme(legend.position="none") + 
+            annotate("segment", x = 0, xend = 3, y = label_y, yend = label_y, color = "black", size = 0.2) +
+            annotate("segment", x = 1, xend = 2, y = label_y, yend = label_y, color = "black", size = 2) + 
+            annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = 3) +
+            annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = 3) + 
+            annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = 3) +
             ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate"))
           
+          save_now(fig, paste0(id, "_significant_site_ratio_by_metacoordinate.svg"))
+          
+          fig <- fig + theme(legend.position="none")
           fig
         }
       })
@@ -124,19 +135,27 @@ methyl_server <- function(id, rvals){
       output$gene_density <- renderPlot({
         dt <- dt_subset()
         if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$plots_maxn)){
-          fig <- ggplot(dt[gene_id %in% rvals$genes],
+          dt <- dt[gene_id %in% rvals$genes]
+          
+          segment_y <- -max(dt$rolling_meth_density_normed) / 5
+          label_y <- -max(dt$rolling_meth_density_normed) / 5
+          
+          fig <- ggplot(dt,
                         aes(x = position, y = rolling_meth_density_normed, color = sample_label)) + 
             geom_point() +
-            geom_smooth() + 
+            #geom_smooth() + 
             geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
-            geom_segment(aes(x = cds_start, xend = cds_end, y = -2, yend = -2, color = NULL), size = 2) + 
-            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = -2), label = "CDS", color = "black", size = 3) +
-            geom_label(aes(x = cds_start/2, y = -2), label = "5' UTR", color = "black", size = 3) + 
-            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = -2), label = "3' UTR", color = "black", size = 3) +
+            geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
+            geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
+            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 3) +
+            geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 3) + 
+            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 3) +
             facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
-            theme(legend.position="none") +
             ggtitle(paste0(id, " Rolling Average Methylation Density"))
           
+          save_now(fig, paste0(id, "_rolling_avg_methyl_density.svg"))
+          
+          fig <- fig + theme(legend.position="none")
           fig
         }
       })
@@ -144,24 +163,29 @@ methyl_server <- function(id, rvals){
       output$gene_swarm <- renderPlot({
         dt <- dt_subset()
         if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$plots_maxn)){
-          fig <- ggplot(dt[gene_id %in% rvals$genes],
+          dt <- dt[gene_id %in% rvals$genes]
+          
+          # the categorical axes are plotted on y=1 and y=2 (y=3...)
+          segment_y <- 0.5
+          label_y <- 0.5
+          
+          fig <- ggplot(dt,
                         aes(x = position, y = sample_label, color = methylated_cat)) +
             geom_beeswarm(size = 1, cex = 1, priority = "density") +
             scale_color_brewer(palette = "Set1") +
-            #guides(color = 'none') +
             geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
+            geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
+            geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
+            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 3) +
+            geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 3) + 
+            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 3) +
             facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
-            #theme(legend.position="none") +
             ggtitle(paste0(id, " Methylation Sites"))
           
+          save_now(fig, paste0(id, "_methylation_sites.svg"))
           fig
         }
       })
-      
-      # output$table_out <- renderDT({
-      #   dt <- dt_subset()
-      #   dt
-      # })
     }
   )
 }

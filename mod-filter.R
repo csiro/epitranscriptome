@@ -13,7 +13,10 @@ InFilter_UI <- function(id){
                    label="Transcripts",
                    choices=NULL,
                    multiple=TRUE,
-                   options=list(placeholder="For fewer than a few genes..."))
+                   options=list(placeholder="For fewer than a few genes...")),
+    checkboxInput(ns("save_plots"), 
+                  label="Save Plots",
+                  value=FALSE)
   )
 }
 
@@ -82,7 +85,7 @@ InFilter_Server <- function(id, rvals){
             dt$methylated_cat <- factor(dt$methylated, levels=c(1,0), labels=c("methylated", "unmethylated"))
           }
           rvals$methyl_subset <- dt 
-          print(summary(rvals$methyl_subset))
+          #print(summary(rvals$methyl_subset))
         })
       }
       
@@ -139,8 +142,10 @@ InFilter_Server <- function(id, rvals){
         print("gene list touched")
         gl_file <- input$gene_list$datapath
         gene_list <- colnames(read_csv(gl_file))
-        print(gene_list)
+        rvals$genes <- gene_list
         updateSelectizeInput(session, "genes", choices=get_all_genes(), selected=gene_list, server = TRUE)
+        filter_polya()
+        filter_methyl()
       })
       
       observeEvent(input$transcripts, {
@@ -151,6 +156,11 @@ InFilter_Server <- function(id, rvals){
         filter_polya()
         filter_methyl()
       }, ignoreNULL = FALSE)
+      
+      observeEvent(input$save_plots, {
+        print("save_plots clicked")
+        rvals$save_svgs <- input$save_plots
+      })
       
       # user input for the polya file name
       observeEvent(input$polya_file, {
@@ -251,7 +261,7 @@ InFilter_Server <- function(id, rvals){
         #rvals$polya
         rvals$methyl
         print("methyl touched")
-        print(summary(rvals$methyl))
+        #print(summary(rvals$methyl))
         ttypes <- get_all_transcript_types()
         gene_list <- get_all_genes()
         updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
