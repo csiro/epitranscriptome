@@ -1,3 +1,4 @@
+library(shinyFiles)
 
 InFilter_UI <- function(id){
   
@@ -14,9 +15,11 @@ InFilter_UI <- function(id){
                    choices=NULL,
                    multiple=TRUE,
                    options=list(placeholder="For fewer than a few genes...")),
-    checkboxInput(ns("save_plots"), 
-                  label="Save Plots",
-                  value=FALSE)
+    # checkboxInput(ns("save_plots"), 
+    #               label="Save Plots",
+    #               value=FALSE),
+    # downloadButton(ns("plot_folder"), label="Set Path")
+    #shinyDirButton(ns("plot_folder"), 'Select output folder', 'Please select a folder', FALSE)
   )
 }
 
@@ -157,10 +160,10 @@ InFilter_Server <- function(id, rvals){
         filter_methyl()
       }, ignoreNULL = FALSE)
       
-      observeEvent(input$save_plots, {
-        print("save_plots clicked")
-        rvals$save_svgs <- input$save_plots
-      })
+      # observeEvent(input$save_plots, {
+      #   print("save_plots clicked")
+      #   rvals$save_svgs <- input$save_plots
+      # })
       
       # user input for the polya file name
       observeEvent(input$polya_file, {

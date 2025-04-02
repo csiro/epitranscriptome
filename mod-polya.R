@@ -17,7 +17,8 @@ polya_UI <- function(id){
     ),
     fluidRow(
       column(6,
-        plotOutput(ns("histogram"))
+        plotOutput(ns("histogram")),
+        downloadButton(ns("save_histogram"), label="Save SVG")
       ),
       column(6,
         plotOutput(ns("box"))
@@ -137,6 +138,15 @@ polya_Server <- function(id, rvals){
           pic
         }
       })
+      
+      output$save_histogram <- downloadHandler(
+        filename <- function(){
+          "polya_histogram.svg"
+        },
+        content <- function(file){
+          ggsave(filename(), width=297, height=210, units="mm")
+        }
+      )
       
       output$box <- renderPlot({
         dt <- rvals$polya_subset
