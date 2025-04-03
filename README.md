@@ -17,5 +17,11 @@ way shiny can access local user files is through the upload buttons. The max upl
 size is set fairly large, but it may be possible that some files are just too 
 large (the app tends to start to struggle with two >500MB RDSs).
 
+The filter section subsets the data by transcript type (eg. protein coding, rRNA,
+unprocessed pseudogene), particular genes (a simple comma separated list of gene
+names may be uploaded) or particular transcripts. The transcript filter only becomes
+active when the data has already been filtered down to a few genes. For these
+input selectors, empty or blank should be interpreted as "no filter"/everything.
+
 
 
