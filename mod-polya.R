@@ -16,12 +16,17 @@ polya_UI <- function(id){
       ),
     ),
     fluidRow(
-      column(6,
-        plotOutput(ns("histogram")),
-        downloadButton(ns("save_histogram"), label="Save SVG")
+      column(5,
+        plotOutput(ns("histogram"))
       ),
-      column(6,
+      column(1,
+        downloadButton(ns("save_histogram"), label="", style="width:40%")
+      ),
+      column(5,
         plotOutput(ns("box"))
+      ),
+      column(1,
+        downloadButton(ns("save_boxplot"), label="", style="width:40%")
       )
     ),
     fluidRow(
@@ -54,7 +59,8 @@ polya_Server <- function(id, rvals){
       ns <- session$ns
       
       pics <- reactiveValues(
-        polya_histogram = NULL
+        polya_histogram = NULL,
+        polya_boxplot = NULL
       )
       
       dt_summary <- function(contig_count_thres, n_to_plot){
@@ -100,15 +106,6 @@ polya_Server <- function(id, rvals){
         return (dt)
       }
       
-      save_now <- function(pic, filename){
-        #if (rvals$save_svgs){
-          #ggsave(filename,
-                 #plot=pic, width=297, height=210, units="mm")
-        #}
-        
-        pics$filename <- pic
-      }
-      
       output$legend <- renderPlot({
         if (nrow(rvals$polya) > 0)
         {
@@ -148,9 +145,7 @@ polya_Server <- function(id, rvals){
       })
       
       output$save_histogram <- downloadHandler(
-        filename <- function(){
-          "polya_histogram.svg"
-        },
+        filename = "polya_histogram.svg",
         content <- function(file){
           ggsave(file, plot=pics$polya_histogram, width=297, height=210, units="mm")
         }
@@ -169,12 +164,21 @@ polya_Server <- function(id, rvals){
                   axis.title.y = element_blank()) +
             ggtitle("PolyA Lengths per Transcript Type")
           
-          #save_now(pic, "polya_box_per_type.svg")
+          # save it with legend
+          pics$polya_boxplot <- pic
           
+          # remove the legend for the page
           pic <- pic + theme(legend.position="none")
           pic
         }
       })
+      
+      output$save_boxplot <- downloadHandler(
+        filename = "polya_boxplot.svg",
+        content <- function(file){
+          ggsave(file, plot=pics$polya_boxplot, width=297, height=210, units="mm")
+        }
+      )
       
       output$swarm <- renderPlot({
         dt <- rvals$polya_subset
