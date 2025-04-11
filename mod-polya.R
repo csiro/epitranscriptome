@@ -53,6 +53,10 @@ polya_Server <- function(id, rvals){
       
       ns <- session$ns
       
+      pics <- reactiveValues(
+        polya_histogram = NULL
+      )
+      
       dt_summary <- function(contig_count_thres, n_to_plot){
         dt <- rvals$polya_subset
         if (nrow(dt) > 0){
@@ -97,10 +101,12 @@ polya_Server <- function(id, rvals){
       }
       
       save_now <- function(pic, filename){
-        if (rvals$save_svgs){
-          ggsave(paste0(rvals$save_svg_path, filename),
-                 plot=pic, width=297, height=210, units="mm")
-        }
+        #if (rvals$save_svgs){
+          #ggsave(filename,
+                 #plot=pic, width=297, height=210, units="mm")
+        #}
+        
+        pics$filename <- pic
       }
       
       output$legend <- renderPlot({
@@ -132,8 +138,10 @@ polya_Server <- function(id, rvals){
                                  alpha = 0.5) +
                   ggtitle("PolyA Length Histogram")
           
-          save_now(pic, "polya_histogram.svg")
+          # save the pic now for download
+          pics$polya_histogram <- pic
           
+          # remove the legend for local display
           pic <- pic + theme(legend.position="none")
           pic
         }
@@ -144,7 +152,7 @@ polya_Server <- function(id, rvals){
           "polya_histogram.svg"
         },
         content <- function(file){
-          ggsave(filename(), width=297, height=210, units="mm")
+          ggsave(file, plot=pics$polya_histogram, width=297, height=210, units="mm")
         }
       )
       
@@ -161,7 +169,7 @@ polya_Server <- function(id, rvals){
                   axis.title.y = element_blank()) +
             ggtitle("PolyA Lengths per Transcript Type")
           
-          save_now(pic, "polya_box_per_type.svg")
+          #save_now(pic, "polya_box_per_type.svg")
           
           pic <- pic + theme(legend.position="none")
           pic
@@ -177,7 +185,7 @@ polya_Server <- function(id, rvals){
             facet_wrap(~ transcript_id + transcript_type, ncol = 4, labeller = label_value) +
             ggtitle("Raw PolyA Lengths per Transcript")
           
-          save_now(pic, "polya_swarm_per_transcript.svg")
+          #save_now(pic, "polya_swarm_per_transcript.svg")
           
           pic <- pic + theme(legend.position="none")
           pic
@@ -198,7 +206,7 @@ polya_Server <- function(id, rvals){
             #scale_fill_brewer(palette="Dark2")
             ggtitle("Top Mean Length Delta Transcripts")
           
-          save_now(pic, "polya_box_per_transcript.svg")
+          #save_now(pic, "polya_box_per_transcript.svg")
           
           pic <- pic + theme(legend.position="none")
           pic
