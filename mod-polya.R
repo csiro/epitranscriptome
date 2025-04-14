@@ -4,6 +4,7 @@ library(grid)
 library(ggbeeswarm)
 #library(shinyFiles)
 library(readr)
+#library(periscope2)
 
 polya_UI <- function(id){
   
@@ -16,27 +17,26 @@ polya_UI <- function(id){
       ),
     ),
     fluidRow(
-      column(5,
-        plotOutput(ns("histogram"))
+      column(6,
+        plotOutput(ns("histogram")),
+        downloadButton(ns("save_histogram"), label="Download Plot")
       ),
-      column(1,
-        downloadButton(ns("save_histogram"), label="", style="width:40%")
-      ),
-      column(5,
-        plotOutput(ns("box"))
-      ),
-      column(1,
-        downloadButton(ns("save_boxplot"), label="", style="width:40%")
+      column(6,
+        plotOutput(ns("box")),
+        downloadButton(ns("save_boxplot"), label="Download Plot")
       )
     ),
     fluidRow(
       column(6, 
         plotOutput(ns("box_summary")),
         fluidRow(
-          column(6,
+          column(4, 
+                 downloadButton(ns("save_summary"), label="Download Plot")
+          ),
+          column(4,
                  numericInput(ns("box_maxn"), "Max Number of Box Plots", value=10, min=0, max=20, step=1)
           ),
-          column(6,
+          column(4,
                  numericInput(ns("contigs_thres"), "Min Samples per Contig", value=10, min=0, max=100, step=1)
                  )
         ),
@@ -44,7 +44,12 @@ polya_UI <- function(id){
       column(6,
         plotOutput(ns("swarm")),
         fluidRow(
-          numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=20, min=0, max=96, step=1)
+          column(6, 
+                 downloadButton(ns("save_swarm"), label="Download Plot")
+          ),
+          column(6,
+                 numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=20, min=0, max=96, step=1)
+          ),
         )
       )
     )
@@ -60,8 +65,14 @@ polya_Server <- function(id, rvals){
       
       pics <- reactiveValues(
         polya_histogram = NULL,
-        polya_boxplot = NULL
+        polya_boxplot = NULL,
+        polya_swarm = NULL,
+        polya_summary = NULL
       )
+      
+      save_pic <- function(file, pic){
+        return (ggsave(file, plot=pic, width=297, height=210, units="mm"))
+      }
       
       dt_summary <- function(contig_count_thres, n_to_plot){
         dt <- rvals$polya_subset
@@ -145,9 +156,11 @@ polya_Server <- function(id, rvals){
       })
       
       output$save_histogram <- downloadHandler(
-        filename = "polya_histogram.svg",
+        filename <- function(){
+          return (paste0("polya_histogram", rvals$save_plot_type))
+        },
         content <- function(file){
-          ggsave(file, plot=pics$polya_histogram, width=297, height=210, units="mm")
+          save_pic(file, pics$polya_histogram)
         }
       )
       
@@ -174,9 +187,11 @@ polya_Server <- function(id, rvals){
       })
       
       output$save_boxplot <- downloadHandler(
-        filename = "polya_boxplot.svg",
+        filename <- function(){
+          return (paste0("polya_boxplot", rvals$save_plot_type))
+        },
         content <- function(file){
-          ggsave(file, plot=pics$polya_boxplot, width=297, height=210, units="mm")
+          save_pic(file, pics$polya_boxplot)
         }
       )
       
@@ -189,7 +204,7 @@ polya_Server <- function(id, rvals){
             facet_wrap(~ transcript_id + transcript_type, ncol = 4, labeller = label_value) +
             ggtitle("Raw PolyA Lengths per Transcript")
           
-          #save_now(pic, "polya_swarm_per_transcript.svg")
+          pics$polya_swarm <- pic
           
           pic <- pic + theme(legend.position="none")
           pic
@@ -198,6 +213,15 @@ polya_Server <- function(id, rvals){
           pic
         }
       })
+      
+      output$save_swarm <- downloadHandler(
+        filename <- function(){
+          return (paste0("polya_swarm", rvals$save_plot_type))
+        },
+        content <- function(file){
+          save_pic(file, pics$polya_swarm)
+        }
+      )
       
       output$box_summary <- renderPlot({
         dt <- dt_summary(input$contigs_thres, input$box_maxn)
@@ -210,12 +234,21 @@ polya_Server <- function(id, rvals){
             #scale_fill_brewer(palette="Dark2")
             ggtitle("Top Mean Length Delta Transcripts")
           
-          #save_now(pic, "polya_box_per_transcript.svg")
+          pics$polya_summary <- pic
           
           pic <- pic + theme(legend.position="none")
           pic
         }
       })
+      
+      output$save_summary <- downloadHandler(
+        filename <- function(){
+          return (paste0("polya_summary", rvals$save_plot_type))
+        },
+        content <- function(file){
+          save_pic(file, pics$polya_summary)
+        }
+      )
     }
   )
 }

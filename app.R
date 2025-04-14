@@ -53,8 +53,7 @@ server <- function(input, output) {
     genes = list(),
     transcript_types = list(),
     transcripts = list(),
-    save_svg_path = config$save_svg_path,
-    save_svgs = FALSE
+    save_plot_type = config$save_plot_type,
   )
 
   polya_Server("polya", rvals)
