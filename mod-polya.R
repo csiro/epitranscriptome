@@ -63,11 +63,13 @@ polya_Server <- function(id, rvals){
       
       ns <- session$ns
       
+      # plots are saved in these reactive values
       pics <- reactiveValues(
         polya_histogram = NULL,
         polya_boxplot = NULL,
         polya_swarm = NULL,
-        polya_summary = NULL
+        polya_summary = NULL,
+        polya_base_plot = ggplot() + theme_light()
       )
       
       save_pic <- function(file, pic){
@@ -137,7 +139,7 @@ polya_Server <- function(id, rvals){
       output$histogram <- renderPlot({
         dt <- rvals$polya_subset
         if (nrow(dt) > 0){
-          pic <- ggplot() +
+          pic <- pics$polya_base_plot +
                   geom_histogram(data = dt,
                                  aes(x = polya_length, color = sample_label, fill = sample_label),
                                  #fill = "white",
@@ -145,6 +147,11 @@ polya_Server <- function(id, rvals){
                                  position = "dodge",
                                  alpha = 0.5) +
                   ggtitle("PolyA Length Histogram")
+          
+          for (s in unique(dt$sample_label)){
+            pic <- pic + geom_vline(data = dt[sample_label == s],
+                                    aes(xintercept = mean(polya_length), color=sample_label))
+          }
           
           # save the pic now for download
           pics$polya_histogram <- pic
@@ -167,7 +174,7 @@ polya_Server <- function(id, rvals){
       output$box <- renderPlot({
         dt <- rvals$polya_subset
         if (nrow(dt) > 0){
-          pic <- ggplot() +
+          pic <- pics$polya_base_plot +
             geom_boxplot(data = dt,
                          aes(x = polya_length, y = sample_label, color = sample_label, fill = sample_label),
                          alpha = 0.5) + 
@@ -198,7 +205,7 @@ polya_Server <- function(id, rvals){
       output$swarm <- renderPlot({
         dt <- rvals$polya_subset
         if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$swarm_maxn)){
-          pic <- ggplot() +
+          pic <- pics$polya_base_plot +
             geom_beeswarm(data = dt,
                           aes(x = polya_length, y = sample_label, color = sample_label)) +
             facet_wrap(~ transcript_id + transcript_type, ncol = 4, labeller = label_value) +
@@ -226,7 +233,7 @@ polya_Server <- function(id, rvals){
       output$box_summary <- renderPlot({
         dt <- dt_summary(input$contigs_thres, input$box_maxn)
         if (nrow(dt) > 0){
-          pic <- ggplot() +
+          pic <- pics$polya_base_plot +
             geom_boxplot(data = dt,
                          aes(x = polya_length, y = transcript_id, color = sample_label, fill = sample_label),
                          alpha = 0.5) + 

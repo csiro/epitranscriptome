@@ -35,7 +35,7 @@ seq_metadata <- fread(metadata_file, check.names = TRUE)
 # define the samples to read. For now, it's best to list the control first.
 # It is possible to define more than two sample sets here, but it's probably best
 # not to try more than about 4 or 5...
-sample_list <- c("sample25", "sample26")
+sample_list <- c("sample27", "sample28")
 # use the r2d annotated methylation calls (if available) otherwise 
 # use the fast5 files
 # TODO: this should be determined by the files existing in the r2d_annotation dirs

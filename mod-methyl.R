@@ -129,7 +129,8 @@ methyl_server <- function(id, rvals){
             annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = 4) +
             annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = 4) + 
             annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = 4) +
-            ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate"))
+            ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate")) +
+            theme_light()
           
           pics$metacoord <- fig
           #save_now(fig, paste0(id, "_significant_site_ratio_by_metacoordinate.svg"))
@@ -167,7 +168,8 @@ methyl_server <- function(id, rvals){
             geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4) + 
             geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4) +
             facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
-            ggtitle(paste0(id, " Rolling Average Methylation Density"))
+            ggtitle(paste0(id, " Rolling Average Methylation Density")) +
+            theme_light()
           
           pics$gene_density <- fig
           
@@ -205,7 +207,8 @@ methyl_server <- function(id, rvals){
             geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4) + 
             geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4) +
             facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
-            ggtitle(paste0(id, " Methylation Sites"))
+            ggtitle(paste0(id, " Methylation Sites")) +
+            theme_light()
           
           pics$gene_swarm <- fig
           fig
