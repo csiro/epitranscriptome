@@ -10,7 +10,8 @@ methyl_UI <- function(id){
     ),
     fluidRow(
       column(9,
-        plotOutput(ns('metacoord'))
+        plotOutput(ns('metacoord')),
+        downloadButton(ns("save_metacoord"), label="Download Plot")
       ),
       column(3,
         numericInput(ns("sig_thres"), "Significance Threshold", value=0.8, min=0, max=1, step=0.01),
@@ -19,10 +20,12 @@ methyl_UI <- function(id){
     ),
     fluidRow(
       column(6,
-             plotOutput(ns("gene_density"))
+         plotOutput(ns("gene_density")),
+         downloadButton(ns("save_gene_density"), label="Download Plot")
       ),
       column(6,
-             plotOutput(ns("gene_swarm"))
+         plotOutput(ns("gene_swarm")),
+         downloadButton(ns("save_gene_swarm"), label="Download Plot")
       ),
     ),
     fluidRow(
@@ -38,6 +41,16 @@ methyl_server <- function(id, rvals){
       
       ns <- session$ns
       
+      pics <- reactiveValues(
+        metacoord = NULL,
+        gene_density = NULL,
+        gene_swarm = NULL
+      )
+      
+      save_pic <- function(file, pic){
+        return (ggsave(file, plot=pic, width=297, height=210, units="mm"))
+      }
+  
       dt_subset <- function(){
         dt <- data.table()
         if (nrow(rvals$methyl_subset) > 0){
@@ -79,13 +92,6 @@ methyl_server <- function(id, rvals){
         return (out_ratio)
       }
       
-      save_now <- function(pic, filename){
-        if (rvals$save_svgs){
-          ggsave(paste0(rvals$save_svg_path, filename),
-                 plot=pic, width=297, height=210, units="mm")
-        }
-      }
-      
       output$legend <- renderPlot({
         if (nrow(rvals$methyl) > 0)
         {
@@ -120,17 +126,27 @@ methyl_server <- function(id, rvals){
             geom_smooth() +
             annotate("segment", x = 0, xend = 3, y = label_y, yend = label_y, color = "black", size = 0.2) +
             annotate("segment", x = 1, xend = 2, y = label_y, yend = label_y, color = "black", size = 2) + 
-            annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = 3) +
-            annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = 3) + 
-            annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = 3) +
+            annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = 4) +
+            annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = 4) + 
+            annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = 4) +
             ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate"))
           
-          save_now(fig, paste0(id, "_significant_site_ratio_by_metacoordinate.svg"))
+          pics$metacoord <- fig
+          #save_now(fig, paste0(id, "_significant_site_ratio_by_metacoordinate.svg"))
           
           fig <- fig + theme(legend.position="none")
           fig
         }
       })
+      
+      output$save_metacoord <- downloadHandler(
+        filename <- function(){
+          return (paste0(id, "_metacoordinate", rvals$save_plot_type))
+        },
+        content <- function(file){
+          save_pic(file, pics$metacoord)
+        }
+      )
       
       output$gene_density <- renderPlot({
         dt <- dt_subset()
@@ -147,18 +163,27 @@ methyl_server <- function(id, rvals){
             geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
             geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
             geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
-            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 3) +
-            geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 3) + 
-            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 3) +
+            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4) +
+            geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4) + 
+            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4) +
             facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
             ggtitle(paste0(id, " Rolling Average Methylation Density"))
           
-          save_now(fig, paste0(id, "_rolling_avg_methyl_density.svg"))
+          pics$gene_density <- fig
           
           fig <- fig + theme(legend.position="none")
           fig
         }
       })
+      
+      output$save_gene_density <- downloadHandler(
+        filename <- function(){
+          return (paste0(id, "_gene_density", rvals$save_plot_type))
+        },
+        content <- function(file){
+          save_pic(file, pics$gene_density)
+        }
+      )
       
       output$gene_swarm <- renderPlot({
         dt <- dt_subset()
@@ -176,16 +201,25 @@ methyl_server <- function(id, rvals){
             geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
             geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
             geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
-            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 3) +
-            geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 3) + 
-            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 3) +
+            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4) +
+            geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4) + 
+            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4) +
             facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
             ggtitle(paste0(id, " Methylation Sites"))
           
-          save_now(fig, paste0(id, "_methylation_sites.svg"))
+          pics$gene_swarm <- fig
           fig
         }
       })
+      
+      output$save_gene_swarm <- downloadHandler(
+        filename <- function(){
+          return (paste0(id, "_gene_swarm", rvals$save_plot_type))
+        },
+        content <- function(file){
+          save_pic(file, pics$gene_swarm)
+        }
+      )
     }
   )
 }
