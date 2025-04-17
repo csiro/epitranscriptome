@@ -88,7 +88,7 @@ InFilter_Server <- function(id, rvals){
             dt$methylated_cat <- factor(dt$methylated, levels=c(1,0), labels=c("methylated", "unmethylated"))
           }
           rvals$methyl_subset <- dt 
-          #print(summary(rvals$methyl_subset))
+          print(nrow(rvals$methyl_subset))
         })
       }
       

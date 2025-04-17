@@ -126,9 +126,9 @@ methyl_server <- function(id, rvals){
             geom_smooth() +
             annotate("segment", x = 0, xend = 3, y = label_y, yend = label_y, color = "black", size = 0.2) +
             annotate("segment", x = 1, xend = 2, y = label_y, yend = label_y, color = "black", size = 2) + 
-            annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = 4) +
-            annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = 4) + 
-            annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = 4) +
+            annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = 4, fontface = "bold") +
+            annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = 4, fontface = "bold") + 
+            annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = 4, fontface = "bold") +
             ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate")) +
             theme_light()
           
@@ -136,6 +136,9 @@ methyl_server <- function(id, rvals){
           #save_now(fig, paste0(id, "_significant_site_ratio_by_metacoordinate.svg"))
           
           fig <- fig + theme(legend.position="none")
+          fig
+        } else {
+          fig <- ggplot() + theme_light() + ggtitle("(No samples or no metacoordinate data)")
           fig
         }
       })
@@ -151,29 +154,37 @@ methyl_server <- function(id, rvals){
       
       output$gene_density <- renderPlot({
         dt <- dt_subset()
-        if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$plots_maxn)){
-          dt <- dt[gene_id %in% rvals$genes]
-          
-          segment_y <- -max(dt$rolling_meth_density_normed) / 5
-          label_y <- -max(dt$rolling_meth_density_normed) / 5
-          
-          fig <- ggplot(dt,
-                        aes(x = position, y = rolling_meth_density_normed, color = sample_label)) + 
-            geom_point() +
-            #geom_smooth() + 
-            geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
-            geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
-            geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
-            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4) +
-            geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4) + 
-            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4) +
-            facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
-            ggtitle(paste0(id, " Rolling Average Methylation Density")) +
-            theme_light()
-          
-          pics$gene_density <- fig
-          
-          fig <- fig + theme(legend.position="none")
+        if (nrow(dt) > 0){
+          if (length(unique(dt$transcript_id)) < input$plots_maxn){
+            dt <- dt[gene_id %in% rvals$genes]
+            
+            segment_y <- -max(dt$rolling_meth_density_normed) / 5
+            label_y <- -max(dt$rolling_meth_density_normed) / 5
+            
+            fig <- ggplot(dt,
+                          aes(x = position, y = rolling_meth_density_normed, color = sample_label)) + 
+              geom_point() +
+              #geom_smooth() + 
+              geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
+              geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
+              geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
+              geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4, fontface = "bold") +
+              geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4, fontface = "bold") + 
+              geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4, fontface = "bold") +
+              facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
+              ggtitle(paste0(id, " Rolling Average Methylation Density")) +
+              theme_light()
+            
+            pics$gene_density <- fig
+            
+            fig <- fig + theme(legend.position="none")
+            fig
+          } else {
+            fig <- ggplot() + theme_light() + ggtitle("(Too many transcripts)")
+            fig
+          }
+        } else {
+          fig <- ggplot() + theme_light() + ggtitle("(No samples)")
           fig
         }
       })
@@ -189,28 +200,36 @@ methyl_server <- function(id, rvals){
       
       output$gene_swarm <- renderPlot({
         dt <- dt_subset()
-        if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$plots_maxn)){
-          dt <- dt[gene_id %in% rvals$genes]
-          
-          # the categorical axes are plotted on y=1 and y=2 (y=3...)
-          segment_y <- 0.5
-          label_y <- 0.5
-          
-          fig <- ggplot(dt,
-                        aes(x = position, y = sample_label, color = methylated_cat)) +
-            geom_beeswarm(size = 1, cex = 1, priority = "density") +
-            scale_color_brewer(palette = "Set1") +
-            geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
-            geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
-            geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
-            geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4) +
-            geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4) + 
-            geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4) +
-            facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
-            ggtitle(paste0(id, " Methylation Sites")) +
-            theme_light()
-          
-          pics$gene_swarm <- fig
+        if (nrow(dt) > 0){
+          if (length(unique(dt$transcript_id)) < input$plots_maxn){
+            dt <- dt[gene_id %in% rvals$genes]
+            
+            # the categorical axes are plotted on y=1 and y=2 (y=3...)
+            segment_y <- 0.5
+            label_y <- 0.5
+            
+            fig <- ggplot(dt,
+                          aes(x = position, y = sample_label, color = methylated_cat)) +
+              geom_beeswarm(size = 1, cex = 1, priority = "density") +
+              scale_color_brewer(palette = "Set1") +
+              geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
+              geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
+              geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
+              geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4, fontface = "bold") +
+              geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4, fontface = "bold") + 
+              geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4, fontface = "bold") +
+              facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
+              ggtitle(paste0(id, " Methylation Sites")) +
+              theme_light()
+            
+            pics$gene_swarm <- fig
+            fig
+          } else {
+            fig <- ggplot() + theme_light() + ggtitle("(Too many transcripts)")
+            fig
+          }
+        } else {
+          fig <- ggplot() + theme_light() + ggtitle("(No samples)")
           fig
         }
       })

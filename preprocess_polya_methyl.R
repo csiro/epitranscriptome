@@ -270,7 +270,7 @@ methyl_raw <- methyl_raw[, pos_gap := frollapply(position, 2, gap, fill = 0), by
 # Filter the methylation data and compute densities
 
 # drop reads with less than this many sites
-site_count_thres <- 50
+site_count_thres <- 20
 methyl <- methyl_raw[site_count > site_count_thres]
 
 # drop methyl reads where the read_length is less than x% of the actual length from the contig info
@@ -280,8 +280,8 @@ methyl <- methyl_raw[site_count > site_count_thres]
 methyl <- methyl[, max_gap := max(pos_gap), by = .(contig, meth_type, sample_label)]
 
 # drop gappy contigs here
-max_gap_thres <- 100
-#methyl <- methyl[max_gap < max_gap_thres]
+max_gap_thres <- 50
+methyl <- methyl[max_gap < max_gap_thres]
 
 # probabilty to call methylated > prob_thres or unmethylated < prob_thres
 prob_thres <- 0.8
