@@ -124,8 +124,8 @@ methyl_server <- function(id, rvals){
             xlim(0,3) +
             geom_point() +
             geom_smooth() +
-            annotate("segment", x = 0, xend = 3, y = label_y, yend = label_y, color = "black", size = 0.2) +
-            annotate("segment", x = 1, xend = 2, y = label_y, yend = label_y, color = "black", size = 2) + 
+            annotate("segment", x = 0, xend = 3, y = label_y, yend = label_y, color = "black", linewidth = 0.2) +
+            annotate("segment", x = 1, xend = 2, y = label_y, yend = label_y, color = "black", linewidth = 2) + 
             annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = 4, fontface = "bold") +
             annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = 4, fontface = "bold") + 
             annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = 4, fontface = "bold") +
@@ -166,8 +166,8 @@ methyl_server <- function(id, rvals){
               geom_point() +
               #geom_smooth() + 
               geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
-              geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
-              geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
+              geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 0.2) +
+              geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 2) + 
               geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4, fontface = "bold") +
               geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4, fontface = "bold") + 
               geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4, fontface = "bold") +
@@ -213,8 +213,8 @@ methyl_server <- function(id, rvals){
               geom_beeswarm(size = 1, cex = 1, priority = "density") +
               scale_color_brewer(palette = "Set1") +
               geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
-              geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), size = 0.2) +
-              geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), size = 2) + 
+              geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 0.2) +
+              geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 2) + 
               geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4, fontface = "bold") +
               geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4, fontface = "bold") + 
               geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4, fontface = "bold") +
