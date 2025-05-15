@@ -9,6 +9,7 @@ library(readr)
 polya_UI <- function(id){
   
   ns <- NS(id)
+  height <- "300px"
   
   fluidPage(
     fluidRow(

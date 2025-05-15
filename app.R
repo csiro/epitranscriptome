@@ -22,6 +22,7 @@ config <- fromJSON(config_file)
 source("mod-polya.R")
 source("mod-methyl.R")
 source("mod-filter.R")
+source('mod-deltamean.R')
 
 #metadata <- read.csv(config$metadata_path)
 
@@ -32,8 +33,12 @@ ui <- page_navbar(title = "Epitranscriptome",
              polya_UI("polya")),
     nav_panel(title = "m5C",
              methyl_UI("m5C")),
+    nav_panel(title = "m5C v PolyA",
+              deltamean_UI("m5C_deltamean")),
     nav_panel(title = "m6A",
-             methyl_UI("m6A"))
+             methyl_UI("m6A")),
+    nav_panel(title = "m6A v PolyA",
+              deltamean_UI("m6A_deltamean"))
 )
 
 
@@ -60,6 +65,8 @@ server <- function(input, output) {
   InFilter_Server("in_filter", rvals)
   methyl_server("m5C", rvals)
   methyl_server("m6A", rvals)
+  deltamean_server("m5C_deltamean", rvals)
+  deltamean_server("m6A_deltamean", rvals)
 }
 
 # Run the application 
