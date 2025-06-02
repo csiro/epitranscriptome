@@ -12,7 +12,7 @@ library(bslib)
 #library(shinyFiles)
 library(jsonlite)
 library(data.table)
-#library(plotly)
+library(plotly)
 #library(DT)
 
 # global config file, it's fine...
@@ -58,6 +58,7 @@ server <- function(input, output) {
     genes = list(),
     transcript_types = list(),
     transcripts = list(),
+    mld_scale = 0,
     save_plot_type = config$save_plot_type,
   )
 
