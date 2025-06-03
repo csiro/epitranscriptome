@@ -34,48 +34,67 @@ deltamean_server <- function(id, rvals){
         methyl_summary_wide = methyl_summary_wide[, delta_meth_density := get(sample_desc[[1]]) - get(sample_desc[[2]])]
         
         methyl_polyA <- merge(methyl_summary_wide, polyA_summary_wide, by = "transcript_id")
-        print(methyl_polyA[transcript_id == "SLIRP-209", ])
         return (methyl_polyA)
       }
       
       output$scatter <- renderPlotly({
         
         dt <- get_summary_dt()
-        sample_desc <- sort(unique(rvals$polya_subset[, sample_label]))
-        this_mld_scale <- mean(abs(dt[, mean_length_delta])) + sqrt(var(abs(dt[, mean_length_delta])))
-        print(paste0("this mld scale = ", this_mld_scale))
-        if (!is.na(this_mld_scale) & this_mld_scale > rvals$mld_scale)
-        {
-          rvals$mld_scale <- this_mld_scale
+        
+        if (nrow(dt) > 0){
+          sample_desc <- sort(unique(rvals$polya_subset[, sample_label]))
+          this_mld_scale <- mean(abs(dt[, mean_length_delta])) + sqrt(var(abs(dt[, mean_length_delta])))
+          print(paste0("this mld scale = ", this_mld_scale))
+          if (!is.na(this_mld_scale) & this_mld_scale > rvals$mld_scale)
+          {
+            rvals$mld_scale <- this_mld_scale
+          }
+          
+          # fig <-  plot_ly(type = 'scatter', mode = 'markers') %>%
+          #   add_trace(data = dt[order(abs(mean_length_delta))],
+          #             x = ~get(paste0(sample_desc[[1]], ".x")),
+          #             y = ~get(paste0(sample_desc[[2]], ".x")),
+          #             marker = list(color = ~mean_length_delta,
+          #                           #colorscale = colorRampPalette(brewer.pal(10,"Spectral"))(41),
+          #                           colorbar = list(title = "delta polyA avg length"),
+          #                           cmin = -rvals$mld_scale,
+          #                           cmax = rvals$mld_scale,
+          #                           cauto = FALSE,
+          #                           showscale = TRUE),
+          #             text = ~paste(transcript_id, " : ", mean_length_delta),
+          #             hoverinfo = 'text',
+          #             showlegend = FALSE) %>%
+          #   layout(title = "",
+          #          xaxis = list(title = paste0(sample_desc[[1]], " mean methylation density")),
+          #          yaxis = list(title = paste0(sample_desc[[2]], " mean methylation density"))) %>%
+          #   layout(shapes = list(type = "line",
+          #                        line = list(color = "grey"),
+          #                        fillcolor = "grey",
+          #                        x0 = 0,
+          #                        x1 = 0.3,
+          #                        xref = "x",
+          #                        y0 = 0,
+          #                        y1 = 0.3,
+          #                        yref = "y"))
+          # 
+          # fig
+          
+          fig <- ggplot(dt, aes(x = get(paste0(sample_desc[[1]], ".x")),
+                                y = get(paste0(sample_desc[[2]], ".x")),
+                                text = paste0(transcript_id, " : ", mean_length_delta),
+                                color = mean_length_delta)) +
+                 geom_point(size = 0.3) + 
+                 scale_color_distiller(type = "div",
+                                       palette = "RdBu",
+                                       limits = c(-rvals$mld_scale, rvals$mld_scale)) + 
+                 annotate("segment", x = 0, xend = 0.3, y = 0, yend = 0.3, color = "black", linewidth = 0.2) +
+                 xlab(paste0(sample_desc[[1]], " average methylation density")) + 
+                 ylab(paste0(sample_desc[[2]], " average methylation density")) + 
+                 theme_dark()
+          
+          toWebGL(ggplotly(fig, tooltip = "text"))
+                        
         }
-        
-        fig <-  plot_ly(type = 'scatter', mode = 'markers') %>%
-          add_trace(data = dt[order(abs(mean_length_delta))],
-                    x = ~get(paste0(sample_desc[[1]], ".x")),
-                    y = ~get(paste0(sample_desc[[2]], ".x")),
-                    marker = list(color = ~mean_length_delta,
-                                  colorscale = "RdBu",
-                                  colorbar = list(title = "delta polyA avg length"),
-                                  cmin = -rvals$mld_scale,
-                                  cmax = rvals$mld_scale,
-                                  showscale = TRUE),
-                    text = ~transcript_id,
-                    hoverinfo = 'text',
-                    showlegend = FALSE) %>%
-          layout(title = "",
-                 xaxis = list(title = paste0(sample_desc[[1]], " mean methylation density")),
-                 yaxis = list(title = paste0(sample_desc[[2]], " mean methylation density"))) %>%
-          layout(shapes = list(type = "line",
-                               line = list(color = "grey"),
-                               fillcolor = "grey",
-                               x0 = 0,
-                               x1 = 0.3,
-                               xref = "x",
-                               y0 = 0,
-                               y1 = 0.3,
-                               yref = "y"))
-        
-        fig
       })
       
     }   

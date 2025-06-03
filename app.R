@@ -13,6 +13,7 @@ library(bslib)
 library(jsonlite)
 library(data.table)
 library(plotly)
+library(RColorBrewer)
 #library(DT)
 
 # global config file, it's fine...
