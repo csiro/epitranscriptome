@@ -41,6 +41,7 @@ methyl_server <- function(id, rvals){
       
       ns <- session$ns
       
+      # the plots are saved into these reactive values
       pics <- reactiveValues(
         metacoord = NULL,
         gene_density = NULL,
@@ -48,7 +49,11 @@ methyl_server <- function(id, rvals){
       )
       
       save_pic <- function(file, pic){
-        return (ggsave(file, plot=pic, width=297, height=210, units="mm"))
+        return (ggsave(file, 
+                       plot=pic, 
+                       width=rvals$plot_width, 
+                       height=rvals$plot_height,
+                       units="mm"))
       }
   
       dt_subset <- function(){
@@ -69,23 +74,21 @@ methyl_server <- function(id, rvals){
         if (nrow(dt) > 0){
           metacoord_breaks <- seq(0, 3, steps)
           
-          # out_ratio <- methyl[, interval := cut(transcript_metacoordinate, metacoord_breaks, include.lowest = TRUE, right = TRUE, labels = FALSE)][, .(n =  .N), by = .(interval, meth_type, sample_label)][, dcast(.SD, interval ~ filter, value.var = "n", fill = 0)][, ratio := sig / (sig + ns)]
-          
           # add a new categorical interval label based on metacoordinate
-          out_ratio <- dt[, metacoord_interval := cut(transcript_metacoordinate, metacoord_breaks, include.lowest = TRUE, right = TRUE, labels = FALSE)]
+          out_ratio <- dt[, metacoord_interval := cut(transcript_metacoordinate, 
+                                                      metacoord_breaks, 
+                                                      include.lowest = TRUE, 
+                                                      right = TRUE, 
+                                                      labels = FALSE)]
           
-          #out_ratio <- out_ratio[, metacoordinate := 3 * metacoord_interval / steps]
-          
+          # methylated bool based on probability threshold
           out_ratio <- out_ratio[, methylated := ifelse( (probability >= prob_thres), 1, 0)]
-          
-          #print(summary(out_ratio))
           
           # aggregate by metacoordinate, sample_label (ie. over all contigs)
           out_ratio <- out_ratio[, .(n = .N, sig = sum(methylated), metacoordinate = mean(transcript_metacoordinate)), by = .(metacoord_interval, sample_label)]
           
+          # throw out any NA rows
           out_ratio <- na.omit(out_ratio)
-          
-          #out_ratio <- out_ratio[, metacoord_sig_sites := sum(methylated), by = .(metacoord_interval, meth_type, sample_label)]
           
           out_ratio <- out_ratio[, metacoord_sig_ratio := sig / n, by = .(metacoord_interval, sample_label)]
         }
@@ -96,12 +99,9 @@ methyl_server <- function(id, rvals){
         if (nrow(rvals$methyl) > 0)
         {
           pic <- ggplot(rvals$methyl, aes(sample_label, fill = sample_label)) +
-            geom_bar(alpha = 0.5)# + 
-          # theme(panel.grid = element_blank(),
-          #       axis.title = element_blank(),
-          #       axis.text = element_blank(),
-          #       axis.ticks = element_blank(),
-          #       panel.background = element_blank()) 
+                 geom_bar(alpha = 0.5) + 
+                 theme_light(base_size = rvals$plot_fontsize)
+
           
           # stealing the legend (stolen from https://stackoverflow.com/questions/12041042/how-to-plot-just-the-legends-in-ggplot2/12041779#12041779)
           tmp <- ggplot_gtable(ggplot_build(pic))
@@ -126,11 +126,11 @@ methyl_server <- function(id, rvals){
             geom_smooth() +
             annotate("segment", x = 0, xend = 3, y = label_y, yend = label_y, color = "black", linewidth = 0.2) +
             annotate("segment", x = 1, xend = 2, y = label_y, yend = label_y, color = "black", linewidth = 2) + 
-            annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = 4, fontface = "bold") +
-            annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = 4, fontface = "bold") + 
-            annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = 4, fontface = "bold") +
+            annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
+            annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") + 
+            annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
             ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate")) +
-            theme_light()
+            theme_light(base_size = rvals$plot_fontsize)
           
           pics$metacoord <- fig
           #save_now(fig, paste0(id, "_significant_site_ratio_by_metacoordinate.svg"))
@@ -168,23 +168,23 @@ methyl_server <- function(id, rvals){
               geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
               geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 0.2) +
               geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 2) + 
-              geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4, fontface = "bold") +
-              geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4, fontface = "bold") + 
-              geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4, fontface = "bold") +
+              geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
+              geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") + 
+              geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
               facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
               ggtitle(paste0(id, " Rolling Average Methylation Density")) +
-              theme_light()
+              theme_light(base_size = rvals$plot_fontsize)
             
             pics$gene_density <- fig
             
             fig <- fig + theme(legend.position="none")
             fig
           } else {
-            fig <- ggplot() + theme_light() + ggtitle("(Too many transcripts)")
+            fig <- ggplot() + theme_light(base_size = rvals$plot_fontsize) + ggtitle("(Too many transcripts)")
             fig
           }
         } else {
-          fig <- ggplot() + theme_light() + ggtitle("(No samples)")
+          fig <- ggplot() + theme_light(base_size = rvals$plot_fontsize) + ggtitle("(No samples)")
           fig
         }
       })
@@ -215,21 +215,21 @@ methyl_server <- function(id, rvals){
               geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
               geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 0.2) +
               geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 2) + 
-              geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = 4, fontface = "bold") +
-              geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = 4, fontface = "bold") + 
-              geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = 4, fontface = "bold") +
+              geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
+              geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") + 
+              geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
               facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
               ggtitle(paste0(id, " Methylation Sites")) +
-              theme_light()
+              theme_light(base_size = rvals$plot_fontsize)
             
             pics$gene_swarm <- fig
             fig
           } else {
-            fig <- ggplot() + theme_light() + ggtitle("(Too many transcripts)")
+            fig <- ggplot() + theme_light(base_size = rvals$plot_fontsize) + ggtitle("(Too many transcripts)")
             fig
           }
         } else {
-          fig <- ggplot() + theme_light() + ggtitle("(No samples)")
+          fig <- ggplot() + theme_light(base_size = rvals$plot_fontsize) + ggtitle("(No samples)")
           fig
         }
       })

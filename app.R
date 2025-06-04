@@ -61,6 +61,9 @@ server <- function(input, output) {
     transcripts = list(),
     mld_scale = 0,
     save_plot_type = config$save_plot_type,
+    plot_width = 297,
+    plot_height = 210,
+    plot_fontsize = 11
   )
 
   polya_Server("polya", rvals)

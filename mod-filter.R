@@ -15,11 +15,9 @@ InFilter_UI <- function(id){
                    choices=NULL,
                    multiple=TRUE,
                    options=list(placeholder="For fewer than a few genes...")),
-    # checkboxInput(ns("save_plots"), 
-    #               label="Save Plots",
-    #               value=FALSE),
-    # downloadButton(ns("plot_folder"), label="Set Path")
-    #shinyDirButton(ns("plot_folder"), 'Select output folder', 'Please select a folder', FALSE)
+    numericInput(ns("plot_width"), "Plot Width", value = 297),
+    numericInput(ns("plot_height"), "Plot Height", value = 210),
+    numericInput(ns("plot_fontsize"), "Base Font Size", value = 11)
   )
 }
 
@@ -273,6 +271,21 @@ InFilter_Server <- function(id, rvals){
         #filter_polya()
         filter_methyl()
       })
+      
+      observeEvent(input$plot_width, {
+        rvals$plot_width <- input$plot_width
+      })
+      
+      observeEvent(input$plot_height, {
+        rvals$plot_height <- input$plot_height
+      })
+      
+      observeEvent(input$plot_fontsize, {
+        rvals$plot_fontsize <- input$plot_fontsize
+      })
+      
+      
+      
       
     }
   )

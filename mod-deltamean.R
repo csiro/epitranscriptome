@@ -4,7 +4,7 @@ deltamean_UI <- function(id){
   ns <- NS(id)
   
   fluidPage(
-    plotlyOutput(ns('scatter'))
+    plotlyOutput(ns('scatter'), height = "800px")
   )
 }
 
@@ -83,14 +83,14 @@ deltamean_server <- function(id, rvals){
                                 y = get(paste0(sample_desc[[2]], ".x")),
                                 text = paste0(transcript_id, " : ", mean_length_delta),
                                 color = mean_length_delta)) +
-                 geom_point(size = 0.3) + 
+                 geom_point(size = 0.4) + 
                  scale_color_distiller(type = "div",
                                        palette = "RdBu",
                                        limits = c(-rvals$mld_scale, rvals$mld_scale)) + 
                  annotate("segment", x = 0, xend = 0.3, y = 0, yend = 0.3, color = "black", linewidth = 0.2) +
-                 xlab(paste0(sample_desc[[1]], " average methylation density")) + 
-                 ylab(paste0(sample_desc[[2]], " average methylation density")) + 
-                 theme_dark()
+                 xlab(paste0(sample_desc[[1]], " ", meth, " density")) + 
+                 ylab(paste0(sample_desc[[2]], " ", meth, " density")) + 
+                 theme_dark(base_size = rvals$plot_fontsize)
           
           toWebGL(ggplotly(fig, tooltip = "text"))
                         

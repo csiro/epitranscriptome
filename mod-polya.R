@@ -69,12 +69,15 @@ polya_Server <- function(id, rvals){
         polya_histogram = NULL,
         polya_boxplot = NULL,
         polya_swarm = NULL,
-        polya_summary = NULL,
-        polya_base_plot = ggplot() + theme_light()
+        polya_summary = NULL
       )
       
       save_pic <- function(file, pic){
-        return (ggsave(file, plot=pic, width=297, height=210, units="mm"))
+        return (ggsave(file, 
+                        plot=pic, 
+                        width=rvals$plot_width, 
+                        height=rvals$plot_height,
+                        units="mm"))
       }
       
       dt_summary <- function(contig_count_thres, n_to_plot){
@@ -124,7 +127,8 @@ polya_Server <- function(id, rvals){
         if (nrow(rvals$polya) > 0)
         {
           pic <- ggplot(rvals$polya, aes(sample_label, fill = sample_label)) +
-                 geom_bar(alpha = 0.5)
+                 geom_bar(alpha = 0.5) + 
+                 theme_light(base_size = rvals$plot_fontsize)
 
           # stealing just the legend from the pic
           # (stolen from https://stackoverflow.com/questions/12041042/how-to-plot-just-the-legends-in-ggplot2/12041779#12041779)
@@ -140,14 +144,15 @@ polya_Server <- function(id, rvals){
       output$histogram <- renderPlot({
         dt <- rvals$polya_subset
         if (nrow(dt) > 0){
-          pic <- pics$polya_base_plot +
-                  geom_histogram(data = dt,
-                                 aes(x = polya_length, color = sample_label, fill = sample_label),
-                                 #fill = "white",
-                                 bins = 40,
-                                 position = "dodge",
-                                 alpha = 0.5) +
-                  ggtitle("PolyA Length Histogram")
+          pic <- ggplot() +
+                 theme_light(base_size = rvals$plot_fontsize) +
+                 geom_histogram(data = dt,
+                                aes(x = polya_length, color = sample_label, fill = sample_label),
+                                #fill = "white",
+                                bins = 40,
+                                position = "dodge",
+                                alpha = 0.5) +
+                 ggtitle("PolyA Length Histogram")
           
           for (s in unique(dt$sample_label)){
             pic <- pic + geom_vline(data = dt[sample_label == s],
@@ -175,15 +180,19 @@ polya_Server <- function(id, rvals){
       output$box <- renderPlot({
         dt <- rvals$polya_subset
         if (nrow(dt) > 0){
-          pic <- pics$polya_base_plot +
-            geom_boxplot(data = dt,
-                         aes(x = polya_length, y = sample_label, color = sample_label, fill = sample_label),
-                         alpha = 0.5) + 
-            facet_wrap(vars(transcript_type), ncol = 4) + 
-            theme(axis.text.y = element_blank(), 
-                  axis.ticks.y = element_blank(), 
-                  axis.title.y = element_blank()) +
-            ggtitle("PolyA Lengths per Transcript Type")
+          pic <- ggplot() +
+                 theme_light(base_size = rvals$plot_fontsize) +
+                 geom_boxplot(data = dt,
+                              aes(x = polya_length, 
+                                  y = sample_label, 
+                                  color = sample_label, 
+                                  fill = sample_label),
+                              alpha = 0.5) + 
+                 facet_wrap(vars(transcript_type), ncol = 4) + 
+                 theme(axis.text.y = element_blank(), 
+                       axis.ticks.y = element_blank(), 
+                       axis.title.y = element_blank()) +
+                ggtitle("PolyA Lengths per Transcript Type")
           
           # save it with legend
           pics$polya_boxplot <- pic
@@ -206,11 +215,16 @@ polya_Server <- function(id, rvals){
       output$swarm <- renderPlot({
         dt <- rvals$polya_subset
         if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$swarm_maxn)){
-          pic <- pics$polya_base_plot +
-            geom_beeswarm(data = dt,
-                          aes(x = polya_length, y = sample_label, color = sample_label)) +
-            facet_wrap(~ transcript_id + transcript_type, ncol = 4, labeller = label_value) +
-            ggtitle("Raw PolyA Lengths per Transcript")
+          pic <- ggplot() +
+                 theme_light(base_size = rvals$plot_fontsize) +
+                 geom_beeswarm(data = dt,
+                               aes(x = polya_length, 
+                                   y = sample_label, 
+                                   color = sample_label)) +
+                 facet_wrap(~ transcript_id + transcript_type, 
+                            ncol = 4, 
+                            labeller = label_value) +
+                 ggtitle("Raw PolyA Lengths per Transcript")
           
           pics$polya_swarm <- pic
           
@@ -234,13 +248,17 @@ polya_Server <- function(id, rvals){
       output$box_summary <- renderPlot({
         dt <- dt_summary(input$contigs_thres, input$box_maxn)
         if (nrow(dt) > 0){
-          pic <- pics$polya_base_plot +
-            geom_boxplot(data = dt,
-                         aes(x = polya_length, y = transcript_id, color = sample_label, fill = sample_label),
-                         alpha = 0.5) + 
-            facet_wrap(vars(transcript_type), ncol = 4) +
-            #scale_fill_brewer(palette="Dark2")
-            ggtitle("Top Mean Length Delta Transcripts")
+          pic <- ggplot() +
+                 theme_light(base_size = rvals$plot_fontsize) +
+                 geom_boxplot(data = dt,
+                              aes(x = polya_length,
+                                  y = transcript_id, 
+                                  color = sample_label, 
+                                  fill = sample_label),
+                              alpha = 0.5) + 
+                 facet_wrap(vars(transcript_type), ncol = 4) +
+                 #scale_fill_brewer(palette="Dark2")
+                 ggtitle("Top Mean Length Delta Transcripts")
           
           pics$polya_summary <- pic
           
