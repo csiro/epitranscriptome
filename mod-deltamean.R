@@ -4,7 +4,8 @@ deltamean_UI <- function(id){
   ns <- NS(id)
   
   fluidPage(
-    plotlyOutput(ns('scatter'), height = "800px")
+    uiOutput(ns('deltamean_plot'))
+    #plotlyOutput(ns('scatter'))
   )
 }
 
@@ -23,7 +24,6 @@ deltamean_server <- function(id, rvals){
         print(paste0("doing the methyl v polya summary with ", meth))
         # sort(unique()) should place "Control" label before "Infected" label
         sample_desc <- sort(unique(rvals$polya_subset[, sample_label]))
-        print(sample_desc)
         
         polyA_summary <- rvals$polya_subset[, .(contig_count = .N, mean_polya_length = mean(polya_length)), by = .(transcript_id, sample_label)]
         polyA_summary_wide <- dcast(polyA_summary, transcript_id ~ sample_label, value.var = 'mean_polya_length')
@@ -34,8 +34,13 @@ deltamean_server <- function(id, rvals){
         methyl_summary_wide = methyl_summary_wide[, delta_meth_density := get(sample_desc[[1]]) - get(sample_desc[[2]])]
         
         methyl_polyA <- merge(methyl_summary_wide, polyA_summary_wide, by = "transcript_id")
+        print(methyl_polyA)
         return (methyl_polyA)
       }
+      
+      output$deltamean_plot <- renderUI({
+        plotlyOutput(ns("scatter"), height = "100%")
+      })
       
       output$scatter <- renderPlotly({
         
@@ -86,7 +91,7 @@ deltamean_server <- function(id, rvals){
                  geom_point(size = 0.4) + 
                  scale_color_distiller(type = "div",
                                        palette = "RdBu",
-                                       limits = c(-rvals$mld_scale, rvals$mld_scale)) + 
+                                       limits = c(-rvals$mld_scale, rvals$mld_scale)) +
                  annotate("segment", x = 0, xend = 0.3, y = 0, yend = 0.3, color = "black", linewidth = 0.2) +
                  xlab(paste0(sample_desc[[1]], " ", meth, " density")) + 
                  ylab(paste0(sample_desc[[2]], " ", meth, " density")) + 

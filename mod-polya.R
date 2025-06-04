@@ -231,7 +231,9 @@ polya_Server <- function(id, rvals){
           pic <- pic + theme(legend.position="none")
           pic
         } else {
-          pic <- ggplot() + ggtitle(paste0("(Waiting for no more than ", input$swarm_maxn, " transcripts)"))
+          pic <- ggplot() +
+                 theme_light(base_size = rvals$plot_fontsize) +
+                 ggtitle(paste0("(Waiting for no more than ", input$swarm_maxn, " transcripts)"))
           pic
         }
       })
