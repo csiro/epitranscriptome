@@ -25,8 +25,6 @@ source("mod-methyl.R")
 source("mod-filter.R")
 source('mod-deltamean.R')
 
-#metadata <- read.csv(config$metadata_path)
-
 # Define UI for application 
 ui <- page_navbar(title = "Epitranscriptome",
     sidebar = sidebar(InFilter_UI("in_filter"), width=300),
