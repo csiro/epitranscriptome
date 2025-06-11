@@ -22,12 +22,20 @@ config <- fromJSON(config_file)
 
 source("mod-polya.R")
 source("mod-methyl.R")
+source("mod-inputfile.R")
 source("mod-filter.R")
 source('mod-deltamean.R')
 
 # Define UI for application 
 ui <- page_navbar(title = "Epitranscriptome",
-    sidebar = sidebar(InFilter_UI("in_filter"), width=300),
+    sidebar = sidebar(
+      accordion(
+        accordion_panel("File Input", InFile_UI("files")),
+        accordion_panel("Filter", InFilter_UI("in_filter")),
+      ),
+      width=450
+    ),
+    
     nav_panel(title = "PolyA",
              polya_UI("polya")),
     nav_panel(title = "m5C",
@@ -65,6 +73,7 @@ server <- function(input, output) {
   )
 
   polya_Server("polya", rvals)
+  InFile_Server("files", rvals)
   InFilter_Server("in_filter", rvals)
   methyl_server("m5C", rvals)
   methyl_server("m6A", rvals)
