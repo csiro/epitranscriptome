@@ -20,10 +20,11 @@ library(RColorBrewer)
 config_file <- "config.json"
 config <- fromJSON(config_file)
 
+source("mod-inputfile.R")
+source("mod-plotexport.R")
+source("mod-filter.R")
 source("mod-polya.R")
 source("mod-methyl.R")
-source("mod-inputfile.R")
-source("mod-filter.R")
 source('mod-deltamean.R')
 
 # Define UI for application 
@@ -32,6 +33,7 @@ ui <- page_navbar(title = "Epitranscriptome",
       accordion(
         accordion_panel("File Input", InFile_UI("files")),
         accordion_panel("Filter", InFilter_UI("in_filter")),
+        accordion_panel("Plot Export", PlotExport_UI("plot_export"))
       ),
       width=450
     ),
@@ -72,9 +74,10 @@ server <- function(input, output) {
     plot_fontsize = 11
   )
 
-  polya_Server("polya", rvals)
   InFile_Server("files", rvals)
   InFilter_Server("in_filter", rvals)
+  PlotExport_Server("plot_export", rvals)
+  polya_Server("polya", rvals)
   methyl_server("m5C", rvals)
   methyl_server("m6A", rvals)
   deltamean_server("m5C_deltamean", rvals)
