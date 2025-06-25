@@ -40,14 +40,14 @@ ui <- page_navbar(title = "Epitranscriptome",
     
     nav_panel(title = "PolyA",
              polya_UI("polya")),
-    nav_panel(title = "m5C",
-             methyl_UI("m5C")),
-    nav_panel(title = "m5C v PolyA",
-              deltamean_UI("m5C_deltamean")),
-    nav_panel(title = "m6A",
-             methyl_UI("m6A")),
-    nav_panel(title = "m6A v PolyA",
-              deltamean_UI("m6A_deltamean"))
+    nav_panel(title = "methylation",
+             methyl_UI("methyl")),
+    nav_panel(title = "methylation v PolyA",
+              deltamean_UI("deltamean")),
+    # nav_panel(title = "m6A",
+    #          methyl_UI("m6A")),
+    # nav_panel(title = "m6A v PolyA",
+    #           deltamean_UI("m6A_deltamean"))
 )
 
 
@@ -64,6 +64,7 @@ server <- function(input, output) {
     methyl_rds = config$methyl_rds,
     methyl = data.table(),
     methyl_subset = data.table(),
+    meth_type = "",
     genes = list(),
     transcript_types = list(),
     transcripts = list(),
@@ -78,10 +79,10 @@ server <- function(input, output) {
   InFilter_Server("in_filter", rvals)
   PlotExport_Server("plot_export", rvals)
   polya_Server("polya", rvals)
-  methyl_server("m5C", rvals)
-  methyl_server("m6A", rvals)
-  deltamean_server("m5C_deltamean", rvals)
-  deltamean_server("m6A_deltamean", rvals)
+  methyl_server("methyl", rvals)
+  #methyl_server("m6A", rvals)
+  deltamean_server("deltamean", rvals)
+  #deltamean_server("m6A_deltamean", rvals)
 }
 
 # Run the application 

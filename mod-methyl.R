@@ -59,7 +59,7 @@ methyl_server <- function(id, rvals){
       dt_subset <- function(){
         dt <- data.table()
         if (nrow(rvals$methyl_subset) > 0){
-          dt <- rvals$methyl_subset[meth_type == id]
+          dt <- rvals$methyl_subset# [meth_type == id]
         }
         return (dt)
       }
@@ -129,7 +129,7 @@ methyl_server <- function(id, rvals){
             annotate("label", x = 1.5, y = label_y, label = "CDS", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
             annotate("label", x = 0.5, y = label_y, label = "5' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") + 
             annotate("label", x = 2.5, y = label_y, label = "3' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
-            ggtitle(paste0(id, " Significant Site Ratio vs Metacoordinate")) +
+            ggtitle(paste0(rvals$meth_type, " Significant Site Ratio vs Metacoordinate")) +
             theme_light(base_size = rvals$plot_fontsize)
           
           pics$metacoord <- fig
@@ -145,7 +145,7 @@ methyl_server <- function(id, rvals){
       
       output$save_metacoord <- downloadHandler(
         filename <- function(){
-          return (paste0(id, "_metacoordinate", rvals$save_plot_type))
+          return (paste0(rvals$meth_type, "_metacoordinate", rvals$save_plot_type))
         },
         content <- function(file){
           save_pic(file, pics$metacoord)
@@ -172,7 +172,7 @@ methyl_server <- function(id, rvals){
               geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") + 
               geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
               facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
-              ggtitle(paste0(id, " Rolling Average Methylation Density")) +
+              ggtitle(paste0(rvals$meth_type, " Rolling Average Methylation Density")) +
               theme_light(base_size = rvals$plot_fontsize)
             
             pics$gene_density <- fig
@@ -191,7 +191,7 @@ methyl_server <- function(id, rvals){
       
       output$save_gene_density <- downloadHandler(
         filename <- function(){
-          return (paste0(id, "_gene_density", rvals$save_plot_type))
+          return (paste0(rvals$meth_type, "_gene_density", rvals$save_plot_type))
         },
         content <- function(file){
           save_pic(file, pics$gene_density)
@@ -219,7 +219,7 @@ methyl_server <- function(id, rvals){
               geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") + 
               geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
               facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
-              ggtitle(paste0(id, " Methylation Sites")) +
+              ggtitle(paste0(irvals$meth_type, " Methylation Sites")) +
               theme_light(base_size = rvals$plot_fontsize)
             
             pics$gene_swarm <- fig
@@ -236,7 +236,7 @@ methyl_server <- function(id, rvals){
       
       output$save_gene_swarm <- downloadHandler(
         filename <- function(){
-          return (paste0(id, "_gene_swarm", rvals$save_plot_type))
+          return (paste0(rvals$meth_type, "_gene_swarm", rvals$save_plot_type))
         },
         content <- function(file){
           save_pic(file, pics$gene_swarm)

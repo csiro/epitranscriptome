@@ -17,11 +17,11 @@ deltamean_server <- function(id, rvals){
       ns <- session$ns
       
       # first 3 chars of the id is the meth type
-      meth <- substr(id, 1, 3)
+      #meth <- substr(id, 1, 3)
       
       get_summary_dt <- function(){
         
-        print(paste0("doing the methyl v polya summary with ", meth))
+        print(paste0("doing the methyl v polya summary with ", rvals$meth_type))
         # sort(unique()) should place "Control" label before "Infected" label
         sample_desc <- sort(unique(rvals$polya_subset[, sample_label]))
         
@@ -29,7 +29,7 @@ deltamean_server <- function(id, rvals){
         polyA_summary_wide <- dcast(polyA_summary, transcript_id ~ sample_label, value.var = 'mean_polya_length')
         polyA_summary_wide <- polyA_summary_wide[, mean_length_delta := get(sample_desc[[1]]) - get(sample_desc[[2]])]
         
-        methyl_summary <- rvals$methyl_subset[meth_type == meth, ][, lapply(.SD, max), .SDcols = c("total_meth_density"), by = .(transcript_id, sample_label)]
+        methyl_summary <- rvals$methyl_subset[, lapply(.SD, max), .SDcols = c("total_meth_density"), by = .(transcript_id, sample_label)]
         methyl_summary_wide = dcast(methyl_summary, transcript_id ~ sample_label, value.var = "total_meth_density")
         methyl_summary_wide = methyl_summary_wide[, delta_meth_density := get(sample_desc[[1]]) - get(sample_desc[[2]])]
         
@@ -93,8 +93,8 @@ deltamean_server <- function(id, rvals){
                                        palette = "RdBu",
                                        limits = c(-rvals$mld_scale, rvals$mld_scale)) +
                  annotate("segment", x = 0, xend = 0.3, y = 0, yend = 0.3, color = "black", linewidth = 0.2) +
-                 xlab(paste0(sample_desc[[1]], " ", meth, " density")) + 
-                 ylab(paste0(sample_desc[[2]], " ", meth, " density")) + 
+                 xlab(paste0(sample_desc[[1]], " ", rvals$meth_type, " density")) + 
+                 ylab(paste0(sample_desc[[2]], " ", rvals$meth_type, " density")) + 
                  theme_dark(base_size = rvals$plot_fontsize)
           
           toWebGL(ggplotly(fig, tooltip = "text"))

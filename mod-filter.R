@@ -5,6 +5,7 @@ InFilter_UI <- function(id){
   ns <- NS(id)
   
   tagList(
+    selectInput(ns("meth_type"), label="methylation", choices=c("m5C", "m6A"), selected="m5C", selectize=FALSE),
     selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
     selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
     fileInput(ns("gene_list"), "Gene List"),
@@ -68,7 +69,7 @@ InFilter_Server <- function(id, rvals){
       filter_methyl <- function(){
         print("in filter_methyl")
         isolate({
-          dt <- copy(rvals$methyl)
+          dt <- copy(rvals$methyl[meth_type == input$meth_type])
           if (nrow(dt) > 0){
             if (length(rvals$transcripts) > 0){
               dt <- dt[transcript_id %in% rvals$transcripts]
@@ -81,9 +82,16 @@ InFilter_Server <- function(id, rvals){
             dt$methylated_cat <- factor(dt$methylated, levels=c(1,0), labels=c("methylated", "unmethylated"))
           }
           rvals$methyl_subset <- dt 
-          print(nrow(rvals$methyl_subset))
+          #print(reactiveValuesToList(rvals))
+          #print(nrow(rvals$methyl_subset))
         })
       }
+      
+      observeEvent(input$meth_type, {
+        print("meth type selected")
+        rvals$meth_type <- input$meth_type
+        filter_methyl()
+      })
       
       observeEvent(input$transcript_type, {
         print("transcript type selected:")
@@ -99,7 +107,7 @@ InFilter_Server <- function(id, rvals){
             gene_list <- unique(rvals$polya[transcript_type %in% rvals$transcript_types]$gene_id)
           }
           if (nrow(rvals$methyl) > 0){
-            gene_list <- unique(append(gene_list, rvals$polya[transcript_type %in% rvals$transcript_types]$gene_id))
+            gene_list <- unique(append(gene_list, rvals$methyl[transcript_type %in% rvals$transcript_types]$gene_id))
           } 
         }
         updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
