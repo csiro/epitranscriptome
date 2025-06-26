@@ -33,7 +33,8 @@ ui <- page_navbar(title = "Epitranscriptome",
       accordion(
         accordion_panel("File Input", InFile_UI("files")),
         accordion_panel("Filter", InFilter_UI("in_filter")),
-        accordion_panel("Plot Export", PlotExport_UI("plot_export"))
+        accordion_panel("Plot Export", PlotExport_UI("plot_export")),
+        open = "Filter",
       ),
       width=450
     ),

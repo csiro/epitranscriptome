@@ -39,7 +39,7 @@ deltamean_server <- function(id, rvals){
       }
       
       output$deltamean_plot <- renderUI({
-        plotlyOutput(ns("scatter"), height = "100%")
+        plotlyOutput(ns("scatter"), height = "800")
       })
       
       output$scatter <- renderPlotly({
