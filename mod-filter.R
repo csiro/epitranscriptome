@@ -38,10 +38,10 @@ InFilter_Server <- function(id, rvals){
       
       get_all_genes <- function(){
         gene_list <- list()
-        if (nrow(rvals$polya)){
+        if (nrow(rvals$polya) > 0){
           gene_list <- unique(rvals$polya$gene_id)
         }
-        if (nrow(rvals$methyl)){
+        if (nrow(rvals$methyl) > 0){
           gene_list <- unique(append(gene_list, rvals$methyl$gene_id))
         }
         return (gene_list)
@@ -69,8 +69,9 @@ InFilter_Server <- function(id, rvals){
       filter_methyl <- function(){
         print("in filter_methyl")
         isolate({
-          dt <- copy(rvals$methyl[meth_type == input$meth_type])
+          dt <- copy(rvals$methyl)
           if (nrow(dt) > 0){
+            dt <- dt[meth_type == input$meth_type]
             if (length(rvals$transcripts) > 0){
               dt <- dt[transcript_id %in% rvals$transcripts]
             } else if (length(rvals$genes) > 0){
