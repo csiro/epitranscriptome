@@ -20,24 +20,35 @@ library(RColorBrewer)
 config_file <- "config.json"
 config <- fromJSON(config_file)
 
+source("mod-inputfile.R")
+source("mod-plotexport.R")
+source("mod-filter.R")
 source("mod-polya.R")
 source("mod-methyl.R")
-source("mod-filter.R")
 source('mod-deltamean.R')
 
 # Define UI for application 
 ui <- page_navbar(title = "Epitranscriptome",
-    sidebar = sidebar(InFilter_UI("in_filter"), width=300),
+    sidebar = sidebar(
+      accordion(
+        accordion_panel("File Input", InFile_UI("files")),
+        accordion_panel("Filter", InFilter_UI("in_filter")),
+        accordion_panel("Plot Export", PlotExport_UI("plot_export")),
+        open = "Filter",
+      ),
+      width=450
+    ),
+    
     nav_panel(title = "PolyA",
              polya_UI("polya")),
-    nav_panel(title = "m5C",
-             methyl_UI("m5C")),
-    nav_panel(title = "m5C v PolyA",
-              deltamean_UI("m5C_deltamean")),
-    nav_panel(title = "m6A",
-             methyl_UI("m6A")),
-    nav_panel(title = "m6A v PolyA",
-              deltamean_UI("m6A_deltamean"))
+    nav_panel(title = "methylation",
+             methyl_UI("methyl")),
+    nav_panel(title = "methylation v PolyA",
+              deltamean_UI("deltamean")),
+    # nav_panel(title = "m6A",
+    #          methyl_UI("m6A")),
+    # nav_panel(title = "m6A v PolyA",
+    #           deltamean_UI("m6A_deltamean"))
 )
 
 
@@ -54,6 +65,7 @@ server <- function(input, output) {
     methyl_rds = config$methyl_rds,
     methyl = data.table(),
     methyl_subset = data.table(),
+    meth_type = "",
     genes = list(),
     transcript_types = list(),
     transcripts = list(),
@@ -64,12 +76,14 @@ server <- function(input, output) {
     plot_fontsize = 11
   )
 
-  polya_Server("polya", rvals)
+  InFile_Server("files", rvals)
   InFilter_Server("in_filter", rvals)
-  methyl_server("m5C", rvals)
-  methyl_server("m6A", rvals)
-  deltamean_server("m5C_deltamean", rvals)
-  deltamean_server("m6A_deltamean", rvals)
+  PlotExport_Server("plot_export", rvals)
+  polya_Server("polya", rvals)
+  methyl_server("methyl", rvals)
+  #methyl_server("m6A", rvals)
+  deltamean_server("deltamean", rvals)
+  #deltamean_server("m6A_deltamean", rvals)
 }
 
 # Run the application 

@@ -1,12 +1,11 @@
-library(shinyFiles)
+
 
 InFilter_UI <- function(id){
   
   ns <- NS(id)
   
   tagList(
-    fileInput(ns("polya_file"), "PolyA RDS"),
-    fileInput(ns("methyl_file"), "Methylation RDS"),
+    selectInput(ns("meth_type"), label="methylation", choices=c("m5C", "m6A"), selected="m5C", selectize=FALSE),
     selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
     selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
     fileInput(ns("gene_list"), "Gene List"),
@@ -14,10 +13,7 @@ InFilter_UI <- function(id){
                    label="Transcripts",
                    choices=NULL,
                    multiple=TRUE,
-                   options=list(placeholder="For fewer than a few genes...")),
-    numericInput(ns("plot_width"), "Plot Width", value = 297),
-    numericInput(ns("plot_height"), "Plot Height", value = 210),
-    numericInput(ns("plot_fontsize"), "Base Font Size", value = 11)
+                   options=list(placeholder="For fewer than a few genes..."))
   )
 }
 
@@ -73,7 +69,7 @@ InFilter_Server <- function(id, rvals){
       filter_methyl <- function(){
         print("in filter_methyl")
         isolate({
-          dt <- copy(rvals$methyl)
+          dt <- copy(rvals$methyl[meth_type == input$meth_type])
           if (nrow(dt) > 0){
             if (length(rvals$transcripts) > 0){
               dt <- dt[transcript_id %in% rvals$transcripts]
@@ -86,9 +82,16 @@ InFilter_Server <- function(id, rvals){
             dt$methylated_cat <- factor(dt$methylated, levels=c(1,0), labels=c("methylated", "unmethylated"))
           }
           rvals$methyl_subset <- dt 
-          print(nrow(rvals$methyl_subset))
+          #print(reactiveValuesToList(rvals))
+          #print(nrow(rvals$methyl_subset))
         })
       }
+      
+      observeEvent(input$meth_type, {
+        print("meth type selected")
+        rvals$meth_type <- input$meth_type
+        filter_methyl()
+      })
       
       observeEvent(input$transcript_type, {
         print("transcript type selected:")
@@ -104,7 +107,7 @@ InFilter_Server <- function(id, rvals){
             gene_list <- unique(rvals$polya[transcript_type %in% rvals$transcript_types]$gene_id)
           }
           if (nrow(rvals$methyl) > 0){
-            gene_list <- unique(append(gene_list, rvals$polya[transcript_type %in% rvals$transcript_types]$gene_id))
+            gene_list <- unique(append(gene_list, rvals$methyl[transcript_type %in% rvals$transcript_types]$gene_id))
           } 
         }
         updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
@@ -158,92 +161,6 @@ InFilter_Server <- function(id, rvals){
         filter_methyl()
       }, ignoreNULL = FALSE)
       
-      # observeEvent(input$save_plots, {
-      #   print("save_plots clicked")
-      #   rvals$save_svgs <- input$save_plots
-      # })
-      
-      # user input for the polya file name
-      observeEvent(input$polya_file, {
-        print("polya file touched")
-        print(input$polya_file)
-        rvals$polya_rds <- input$polya_file$datapath
-      })
-      
-      observeEvent(input$methyl_file, {
-        print("methyl file touched")
-        print(input$methyl_file)
-        rvals$methyl_rds <- input$methyl_file$datapath
-      })
-      
-      # new file to upload ... load it
-      # note that we have this as seperate from observe(input$polya_file)
-      # to detect the initial value
-      observe({
-        rvals$polya_rds
-        print("doing the polya load...")
-        if (file.exists(rvals$polya_rds)){
-          dt <- readRDS(rvals$polya_rds)
-          # going to be fairly strict about the exact columns in the RDS
-          expected_cols <- c("readname",
-                             "contig",
-                             "position",
-                             "leader_start",
-                             "adapter_start",
-                             "polya_start",
-                             "transcript_start",
-                             "read_rate",
-                             "polya_length",
-                             "qc_tag",
-                             "sample_label",
-                             "ensembl_t",
-                             "ensembl_g",
-                             "havana_g",
-                             "havana_t",
-                             "transcript_id",
-                             "gene_id",
-                             "length",
-                             "transcript_type")
-          if (all(expected_cols %in% colnames(dt))){
-            rvals$polya <- dt
-            print("...loaded")
-          } else {
-            print("incoming polyaRDS does not contain the expected columns")
-          }
-        } else {
-          print("polya file doesn't exist")
-        }
-      })
-      
-      # another copy pasta :/
-      observe({
-        rvals$methyl_rds
-        print("doing the methyl load...")
-        if (file.exists(rvals$methyl_rds)){
-          dt <- readRDS(rvals$methyl_rds)
-          expected_cols <- c("meth_type",
-                             "transcript_metacoordinate",
-                             "probability",
-                             "sample_label",
-                             "transcript_type",
-                             "transcript_id",
-                             "gene_id",
-                             "position",
-                             "up_junc_dist",
-                             "cds_start",
-                             "cds_end",
-                             "tx_end")
-          if (all(expected_cols %in% colnames(dt))){
-            rvals$methyl <- dt
-            print("...loaded")
-          } else {
-            print("incoming methyl RDS does not contain the expected columns")
-          }
-        } else {
-          print("methyl file does not exist")
-        }
-      })
-      
       # whole new file(s), reset everything
       observe({
         rvals$polya
@@ -271,22 +188,6 @@ InFilter_Server <- function(id, rvals){
         #filter_polya()
         filter_methyl()
       })
-      
-      observeEvent(input$plot_width, {
-        rvals$plot_width <- input$plot_width
-      })
-      
-      observeEvent(input$plot_height, {
-        rvals$plot_height <- input$plot_height
-      })
-      
-      observeEvent(input$plot_fontsize, {
-        rvals$plot_fontsize <- input$plot_fontsize
-      })
-      
-      
-      
-      
     }
   )
 }
