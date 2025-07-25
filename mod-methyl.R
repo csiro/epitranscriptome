@@ -1,37 +1,59 @@
-#library(DT)
 
 methyl_UI <- function(id){
   
   ns <- NS(id)
   
   fluidPage(
-    fluidRow(
-      plotOutput(ns('legend'), height="50px")
+    plotOutput(ns("legend"), height="75px"),
+    card(full_screen = TRUE, 
+         card_body(plotOutput(ns("metacoord"))),
+         card_footer(layout_columns(downloadButton(ns("save_metacoord"), label="", style = "width:100px;"),
+                                    numericInput(ns("sig_thres"), "Significance Threshold", value=0.8, min=0, max=1, step=0.01),
+                                    numericInput(ns("steps"), "Intervals", value=120, min=1, max=3000, step=10))
+         )
     ),
-    fluidRow(
-      column(9,
-        plotOutput(ns('metacoord')),
-        downloadButton(ns("save_metacoord"), label="Download Plot")
+    layout_column_wrap(
+      width = 1/2,
+      card(full_screen = TRUE,
+           card_body(plotOutput(ns("gene_density"))),
+           card_footer(downloadButton(ns("save_gene_density"), label="", style = "width:100px;"))
       ),
-      column(3,
-        numericInput(ns("sig_thres"), "Significance Threshold", value=0.8, min=0, max=1, step=0.01),
-        numericInput(ns("steps"), "Intervals", value=120, min=1, max=3000, step=10)
+      card(full_screen = TRUE,
+           card_body(plotOutput(ns("gene_swarm"))),
+           card_footer(downloadButton(ns("save_gene_swarm"), label="", style = "width:100px;"))
       )
     ),
-    fluidRow(
-      column(6,
-         plotOutput(ns("gene_density")),
-         downloadButton(ns("save_gene_density"), label="Download Plot")
-      ),
-      column(6,
-         plotOutput(ns("gene_swarm")),
-         downloadButton(ns("save_gene_swarm"), label="Download Plot")
-      ),
-    ),
-    fluidRow(
-      numericInput(ns("plots_maxn"), "Max Number of Raw Plots", value=20, min=0, max=100, step=1)
-    )
+    numericInput(ns("plots_maxn"), "Max Number of Raw Plots", value=20, min=0, max=100, step=1)
   )
+    
+  # fluidPage(
+  #   fluidRow(
+  #     plotOutput(ns('legend'), height="50px")
+  #   ),
+  #   fluidRow(
+  #     column(9,
+  #       plotOutput(ns('metacoord')),
+  #       downloadButton(ns("save_metacoord"), label="Download Plot")
+  #     ),
+  #     column(3,
+  #       numericInput(ns("sig_thres"), "Significance Threshold", value=0.8, min=0, max=1, step=0.01),
+  #       numericInput(ns("steps"), "Intervals", value=120, min=1, max=3000, step=10)
+  #     )
+  #   ),
+  #   fluidRow(
+  #     column(6,
+  #        plotOutput(ns("gene_density")),
+  #        downloadButton(ns("save_gene_density"), label="Download Plot")
+  #     ),
+  #     column(6,
+  #        plotOutput(ns("gene_swarm")),
+  #        downloadButton(ns("save_gene_swarm"), label="Download Plot")
+  #     ),
+  #   ),
+  #   fluidRow(
+  #     numericInput(ns("plots_maxn"), "Max Number of Raw Plots", value=20, min=0, max=100, step=1)
+  #   )
+  # )
 }
 
 methyl_server <- function(id, rvals){

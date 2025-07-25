@@ -44,11 +44,7 @@ ui <- page_navbar(title = "Epitranscriptome",
     nav_panel(title = "methylation",
              methyl_UI("methyl")),
     nav_panel(title = "methylation v PolyA",
-              deltamean_UI("deltamean")),
-    # nav_panel(title = "m6A",
-    #          methyl_UI("m6A")),
-    # nav_panel(title = "m6A v PolyA",
-    #           deltamean_UI("m6A_deltamean"))
+              deltamean_UI("deltamean"))
 )
 
 
@@ -81,9 +77,7 @@ server <- function(input, output) {
   PlotExport_Server("plot_export", rvals)
   polya_Server("polya", rvals)
   methyl_server("methyl", rvals)
-  #methyl_server("m6A", rvals)
   deltamean_server("deltamean", rvals)
-  #deltamean_server("m6A_deltamean", rvals)
 }
 
 # Run the application 
