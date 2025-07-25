@@ -9,7 +9,7 @@
 
 library(shiny)
 library(bslib)
-#library(shinyFiles)
+library(svglite)
 library(jsonlite)
 library(data.table)
 library(plotly)
