@@ -270,8 +270,8 @@ methyl_raw <- methyl_raw[, pos_gap := frollapply(position, 2, gap, fill = 0), by
 # Filter the methylation data and compute densities
 
 # drop reads with less than this many sites
-site_count_thres <- 20
-#methyl <- methyl_raw[site_count > site_count_thres]
+site_count_thres <- 0
+methyl <- methyl_raw[site_count > site_count_thres]
 
 # drop methyl reads where the read_length is less than x% of the actual length from the contig info
 #methyl <- methyl[pos_span > length * 0.8]

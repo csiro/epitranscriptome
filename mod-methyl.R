@@ -219,7 +219,7 @@ methyl_server <- function(id, rvals){
               geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") + 
               geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
               facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) + 
-              ggtitle(paste0(irvals$meth_type, " Methylation Sites")) +
+              ggtitle(paste0(rvals$meth_type, " Methylation Sites")) +
               theme_light(base_size = rvals$plot_fontsize)
             
             pics$gene_swarm <- fig

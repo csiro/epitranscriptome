@@ -5,7 +5,11 @@ InFilter_UI <- function(id){
   ns <- NS(id)
   
   tagList(
-    selectInput(ns("meth_type"), label="Methylation", choices=c("m5C", "m6A"), selected="m5C", selectize=FALSE),
+    fluidRow(
+      column(4, selectInput(ns("meth_type"), label="Methylation", choices=c("m5C", "m6A"), selected="m5C", selectize=FALSE)),
+      column(4, numericInput(ns("sites_thres"), "Min Sites", value=20, min=0, max=1000, step=1)),
+      column(4, numericInput(ns("gap_thres"), "Max Gap", value=50, min=0, max=1000, step=1))
+    ),
     selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
     selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
     fileInput(ns("gene_list"), "Gene List"),
@@ -72,6 +76,8 @@ InFilter_Server <- function(id, rvals){
           dt <- copy(rvals$methyl)
           if (nrow(dt) > 0){
             dt <- dt[meth_type == input$meth_type]
+            dt <- dt[site_count > input$sites_thres]
+            dt <- dt[max_gap < input$gap_thres]
             if (length(rvals$transcripts) > 0){
               dt <- dt[transcript_id %in% rvals$transcripts]
             } else if (length(rvals$genes) > 0){
@@ -91,6 +97,14 @@ InFilter_Server <- function(id, rvals){
       observeEvent(input$meth_type, {
         print("meth type selected")
         rvals$meth_type <- input$meth_type
+        filter_methyl()
+      })
+      
+      observeEvent(input$sites_thres, {
+        filter_methyl()
+      })
+      
+      observeEvent(input$gap_thres, {
         filter_methyl()
       })
       
