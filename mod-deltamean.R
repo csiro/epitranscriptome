@@ -3,9 +3,13 @@ deltamean_UI <- function(id){
   
   ns <- NS(id)
   
+  dl_button_style <- "width:100px;"
+  
   fluidPage(
-    uiOutput(ns('deltamean_plot'))
-    #plotlyOutput(ns('scatter'))
+    card(full_screen = TRUE,
+         card_body(uiOutput(ns('deltamean_plot'))),
+         card_footer(downloadButton(ns("save_deltamean"), label="", style = dl_button_style))
+    )
   )
 }
 
@@ -16,8 +20,17 @@ deltamean_server <- function(id, rvals){
       
       ns <- session$ns
       
-      # first 3 chars of the id is the meth type
-      #meth <- substr(id, 1, 3)
+      pics <- reactiveValues(
+        deltamean = NULL
+      )
+      
+      save_pic <- function(file, pic){
+        return (ggsave(file, 
+                       plot=pic, 
+                       width=rvals$plot_width, 
+                       height=rvals$plot_height,
+                       units="mm"))
+      }
       
       get_summary_dt <- function(){
         
@@ -55,35 +68,6 @@ deltamean_server <- function(id, rvals){
             rvals$mld_scale <- this_mld_scale
           }
           
-          # fig <-  plot_ly(type = 'scatter', mode = 'markers') %>%
-          #   add_trace(data = dt[order(abs(mean_length_delta))],
-          #             x = ~get(paste0(sample_desc[[1]], ".x")),
-          #             y = ~get(paste0(sample_desc[[2]], ".x")),
-          #             marker = list(color = ~mean_length_delta,
-          #                           #colorscale = colorRampPalette(brewer.pal(10,"Spectral"))(41),
-          #                           colorbar = list(title = "delta polyA avg length"),
-          #                           cmin = -rvals$mld_scale,
-          #                           cmax = rvals$mld_scale,
-          #                           cauto = FALSE,
-          #                           showscale = TRUE),
-          #             text = ~paste(transcript_id, " : ", mean_length_delta),
-          #             hoverinfo = 'text',
-          #             showlegend = FALSE) %>%
-          #   layout(title = "",
-          #          xaxis = list(title = paste0(sample_desc[[1]], " mean methylation density")),
-          #          yaxis = list(title = paste0(sample_desc[[2]], " mean methylation density"))) %>%
-          #   layout(shapes = list(type = "line",
-          #                        line = list(color = "grey"),
-          #                        fillcolor = "grey",
-          #                        x0 = 0,
-          #                        x1 = 0.3,
-          #                        xref = "x",
-          #                        y0 = 0,
-          #                        y1 = 0.3,
-          #                        yref = "y"))
-          # 
-          # fig
-          
           fig <- ggplot(dt, aes(x = get(paste0(sample_desc[[1]], ".x")),
                                 y = get(paste0(sample_desc[[2]], ".x")),
                                 text = paste0(transcript_id, " : ", mean_length_delta),
@@ -97,10 +81,23 @@ deltamean_server <- function(id, rvals){
                  ylab(paste0(sample_desc[[2]], " ", rvals$meth_type, " density")) + 
                  theme_dark(base_size = rvals$plot_fontsize)
           
+          # save the ggplot to save
+          pics$deltamean <- fig
+          
+          # but send the plot through plotly to display
           toWebGL(ggplotly(fig, tooltip = "text"))
                         
         }
       })
+      
+      output$save_deltamean <- downloadHandler(
+        filename <- function(){
+          return (paste0("meth_v_polyamean", rvals$save_plot_type))
+        },
+        content <- function(file){
+          save_pic(file, pics$deltamean)
+        }
+      )
       
     }   
   )

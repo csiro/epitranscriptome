@@ -5,7 +5,7 @@ InFilter_UI <- function(id){
   ns <- NS(id)
   
   tagList(
-    selectInput(ns("meth_type"), label="methylation", choices=c("m5C", "m6A"), selected="m5C", selectize=FALSE),
+    selectInput(ns("meth_type"), label="Methylation", choices=c("m5C", "m6A"), selected="m5C", selectize=FALSE),
     selectizeInput(ns("transcript_type"), label="Transcript Types", choices = NULL, multiple = TRUE),
     selectizeInput(ns("genes"), label="Genes", choices=NULL, multiple=TRUE),
     fileInput(ns("gene_list"), "Gene List"),
