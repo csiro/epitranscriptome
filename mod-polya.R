@@ -10,21 +10,24 @@ polya_UI <- function(id){
   
   ns <- NS(id)
   
+  dl_button_style <- "width:100px;"
+  body_padding <- 15
+  
   fluidPage(
     plotOutput(ns("legend"), height="75px"),
     layout_column_wrap(
       width = 1/2,
       card(full_screen = TRUE, 
-           card_body(plotOutput(ns("histogram"))),
-           card_footer(downloadButton(ns("save_histogram"), label="", style = "width:100px;"))
+           card_body(plotOutput(ns("histogram")), padding = body_padding),
+           card_footer(downloadButton(ns("save_histogram"), label="", style = dl_button_style))
       ),
       card(full_screen = TRUE, 
-           card_body(plotOutput(ns("box"))),
-           card_footer(downloadButton(ns("save_boxplot"), label="", style = "width:100px;"))
+           card_body(plotOutput(ns("box")), padding = body_padding),
+           card_footer(downloadButton(ns("save_boxplot"), label="", style = dl_button_style))
       ),
       card(full_screen = TRUE, 
-           card_body(plotOutput(ns("box_summary"))),
-           card_footer(layout_columns(downloadButton(ns("save_summary"), label="", style = "width:100px;"),
+           card_body(plotOutput(ns("box_summary")), padding = body_padding),
+           card_footer(layout_columns(downloadButton(ns("save_summary"), label="", style = dl_button_style),
                            numericInput(ns("box_maxn"), "Max Number of Box Plots", value=10, min=0, max=20, step=1),
                            numericInput(ns("contigs_thres"), "Min Samples per Contig", value=10, min=0, max=100, step=1)
                            
@@ -32,8 +35,8 @@ polya_UI <- function(id){
            )
       ),
       card(full_screen = TRUE, 
-           card_body(plotOutput(ns("swarm"))),
-           card_footer(layout_columns(downloadButton(ns("save_swarm"), label="", style = "width:100px;"),
+           card_body(plotOutput(ns("swarm")), padding = body_padding),
+           card_footer(layout_columns(downloadButton(ns("save_swarm"), label="", style = dl_button_style),
                            numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=20, min=0, max=96, step=1)
                       )
            )
