@@ -14,7 +14,11 @@ library(jsonlite)
 library(data.table)
 library(plotly)
 library(RColorBrewer)
-#library(DT)
+library(DT)
+library(ggplot2)
+library(grid)
+library(ggbeeswarm)
+library(readr)
 
 # global config file, it's fine...
 config_file <- "config.json"

@@ -1,10 +1,3 @@
-#library(bslib)
-library(ggplot2)
-library(grid)
-library(ggbeeswarm)
-#library(shinyFiles)
-library(readr)
-#library(periscope2)
 
 polya_UI <- function(id){
   
@@ -14,7 +7,7 @@ polya_UI <- function(id){
   body_padding <- 15
   
   page_fillable(
-    plotOutput(ns("legend"), height="75px"),
+    plotOutput(ns("legend"), height="60px"),
     layout_column_wrap(
       width = 1/2,
       card(full_screen = TRUE, 

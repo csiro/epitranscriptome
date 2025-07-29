@@ -4,8 +4,8 @@ PlotExport_UI <- function(id){
   ns <- NS(id)
   
   tagList(
-    numericInput(ns("plot_width"), "Plot Width", value = 297),
-    numericInput(ns("plot_height"), "Plot Height", value = 210),
+    numericInput(ns("plot_width"), "Plot Width (mm)", value = 297),
+    numericInput(ns("plot_height"), "Plot Height (mm)", value = 210),
     numericInput(ns("plot_fontsize"), "Base Font Size", value = 11)
   )
 }
