@@ -7,7 +7,7 @@ polya_UI <- function(id){
   body_padding <- 15
   
   page_fillable(
-    plotOutput(ns("legend"), height="60px"),
+    plotOutput(ns("legend"), height="70px"),
     layout_column_wrap(
       width = 1/2,
       card(full_screen = TRUE, 
@@ -157,6 +157,10 @@ polya_Server <- function(id, rvals){
           save_pic(file, pics$polya_histogram)
         }
       )
+      
+      # output$DTsummary <- DT::renderDataTable(
+      #   rvals$polya_subset[, .(read_count = .N, mean_polyA_length = mean(polya_length), var_polya_length = var(polya_length)), by = .(sample_label)]
+      # )
       
       output$box <- renderPlot({
         dt <- rvals$polya_subset

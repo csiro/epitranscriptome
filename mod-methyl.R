@@ -7,7 +7,7 @@ methyl_UI <- function(id){
   body_padding <- 15
   
   page_fillable(
-    plotOutput(ns("legend"), height="60px"),
+    plotOutput(ns("legend"), height="70px"),
     card(full_screen = TRUE, 
          card_body(plotOutput(ns("metacoord")), padding = body_padding),
          card_footer(layout_columns(downloadButton(ns("save_metacoord"), label="", style = dl_button_style),
