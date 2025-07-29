@@ -5,9 +5,9 @@ deltamean_UI <- function(id){
   
   dl_button_style <- "width:100px;"
   
-  fluidPage(
+  page_fillable(
     card(full_screen = TRUE,
-         card_body(uiOutput(ns('deltamean_plot'))),
+         card_body(plotlyOutput(ns("scatter"))),
          card_footer(downloadButton(ns("save_deltamean"), label="", style = dl_button_style))
     )
   )
@@ -51,9 +51,10 @@ deltamean_server <- function(id, rvals){
         return (methyl_polyA)
       }
       
-      output$deltamean_plot <- renderUI({
-        plotlyOutput(ns("scatter"), height = "800")
-      })
+      # just the straight plotly worked to fill the height finally
+      # output$deltamean_plot <- renderUI({
+      #   plotlyOutput(ns("scatter"), height = "800")
+      # })
       
       output$scatter <- renderPlotly({
         

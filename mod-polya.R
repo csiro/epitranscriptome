@@ -13,7 +13,7 @@ polya_UI <- function(id){
   dl_button_style <- "width:100px;"
   body_padding <- 15
   
-  fluidPage(
+  page_fillable(
     plotOutput(ns("legend"), height="75px"),
     layout_column_wrap(
       width = 1/2,

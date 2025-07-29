@@ -6,7 +6,7 @@ methyl_UI <- function(id){
   dl_button_style <- "width:100px;"
   body_padding <- 15
   
-  fluidPage(
+  page_fillable(
     plotOutput(ns("legend"), height="75px"),
     card(full_screen = TRUE, 
          card_body(plotOutput(ns("metacoord")), padding = body_padding),
@@ -30,7 +30,6 @@ methyl_UI <- function(id){
                        )
       )
     ),
-    
   )
 }
 
