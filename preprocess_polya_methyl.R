@@ -9,9 +9,9 @@ platform <- Sys.info()['sysname']
 
 if (platform == 'Linux'){
   # we'll assume we're on the HPC if we're in a linux environ
-  root_path <- "/datasets/work/hb-rna-modifications/work/imt_sc_rnamodifications/"
+  root_path <- "/datasets/work/hb-rna-modifications/work/bk_imt_rnamodifications/"
   # the path to the annotations from r2d may be different
-  r2d_root_path <- "/datasets/work/hb-rna-modifications/work/imt_sc_rnamodifications/r2d/"
+  r2d_root_path <- "/datasets/work/hb-rna-modifications/work/bk_imt_rnamodifications/r2d/"
   #r2d_root_path <- "/datasets/work/sc-kno070/work/rna-transcriptomics/"
 } else {
   # otherwise, for me this mapped network drive points to the same Bowen store. 
@@ -269,9 +269,10 @@ methyl_raw <- methyl_raw[, pos_gap := frollapply(position, 2, gap, fill = 0), by
 ################################################################################
 # Filter the methylation data and compute densities
 
-# drop reads with less than this many sites
-site_count_thres <- 0
-methyl <- methyl_raw[site_count > site_count_thres]
+# drop reads with less than this many sites (now done in app)
+#site_count_thres <- 0
+#methyl <- methyl_raw[site_count > site_count_thres]
+methyl <- methyl_raw
 
 # drop methyl reads where the read_length is less than x% of the actual length from the contig info
 #methyl <- methyl[pos_span > length * 0.8]
@@ -279,8 +280,8 @@ methyl <- methyl_raw[site_count > site_count_thres]
 # maximum gap from one pos to the next
 methyl <- methyl[, max_gap := max(pos_gap), by = .(contig, meth_type, sample_label)]
 
-# drop gappy contigs here
-max_gap_thres <- 50
+# drop gappy contigs here (now done in app)
+#max_gap_thres <- 50
 #methyl <- methyl[max_gap < max_gap_thres]
 
 # probabilty to call methylated > prob_thres or unmethylated < prob_thres
