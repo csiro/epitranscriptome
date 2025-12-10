@@ -21,18 +21,13 @@ polya_UI <- function(id){
       card(full_screen = TRUE, 
            card_body(plotOutput(ns("box_summary")), padding = body_padding),
            card_footer(layout_columns(downloadButton(ns("save_summary"), label="", style = dl_button_style),
-                           numericInput(ns("box_maxn"), "Max Number of Box Plots", value=10, min=0, max=20, step=1),
-                           numericInput(ns("contigs_thres"), "Min Samples per Contig", value=10, min=0, max=100, step=1)
-                           
-                      )
-           )
+                       numericInput(ns("box_maxn"), "Max Number of Box Plots", value=10, min=0, max=20, step=1),
+                       numericInput(ns("contigs_thres"), "Min Samples per Contig", value=10, min=0, max=100, step=1)))
       ),
       card(full_screen = TRUE, 
            card_body(plotOutput(ns("swarm")), padding = body_padding),
            card_footer(layout_columns(downloadButton(ns("save_swarm"), label="", style = dl_button_style),
-                           numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=20, min=0, max=96, step=1)
-                      )
-           )
+                       numericInput(ns("swarm_maxn"), "Max Number of Raw Plots", value=20, min=0, max=96, step=1)))
       )
     )
   )

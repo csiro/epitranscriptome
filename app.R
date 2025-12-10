@@ -1,12 +1,3 @@
-#
-# This is a Shiny web application. You can run the application by clicking
-# the 'Run App' button above.
-#
-# Find out more about building applications with Shiny here:
-#
-#    https://shiny.posit.co/
-#
-
 library(shiny)
 library(bslib)
 library(svglite)
@@ -20,7 +11,8 @@ library(grid)
 library(ggbeeswarm)
 library(readr)
 
-# global config file, it's fine...
+# global config file, TODO: there is not much happening with this config,
+# either expand to more defaults or remove entirely
 config_file <- "config.json"
 config <- fromJSON(config_file)
 
@@ -40,7 +32,7 @@ ui <- page_navbar(title = "Epitranscriptome",
         accordion_panel("Plot Export", PlotExport_UI("plot_export")),
         open = "Filter",
       ),
-      width=450
+      width=400
     ),
     
     nav_panel(title = "PolyA",
@@ -48,7 +40,15 @@ ui <- page_navbar(title = "Epitranscriptome",
     nav_panel(title = "methylation",
              methyl_UI("methyl")),
     nav_panel(title = "methylation v PolyA",
-              deltamean_UI("deltamean"))
+              deltamean_UI("deltamean")),
+    
+    # for globally adjusting the font of the ui items
+    # tags$head(tags$style('
+    #  body {
+    #     font-family: Arial; 
+    #     font-size: 20px; 
+    #  }'
+    # ))
 )
 
 
@@ -57,7 +57,9 @@ server <- function(input, output) {
   # set max "upload" size ... since we're handling the upload manually, this is
   # just making sure the UI isn't always saying things are too big
   options(shiny.maxRequestSize=500*1024^2)
-
+  
+  # using the usual pattern of making a blob of reactive values to pass between
+  # the modules
   rvals <- reactiveValues(
     polya_rds = config$polya_rds,
     polya = data.table(),
