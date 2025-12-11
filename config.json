@@ -1,5 +1,6 @@
-{"metadata_path":"Y:/dRNA_seq_metadata_design.csv",
- "polya_rds":"../sample27_sample28_PolyA_resampled.rds",
- "methyl_rds":"../sample27_sample28_methyl.rds",
- "save_plot_type":".svg"
+{
+  "metadata_path":"Y:/dRNA_seq_metadata_design.csv",
+  "polya_rds":"../sample27_sample28_PolyA_resampled.rds",
+  "methyl_rds":"../sample27_sample28_methyl.rds",
+  "save_plot_type":".svg"
 } 

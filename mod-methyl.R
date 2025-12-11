@@ -12,24 +12,21 @@ methyl_UI <- function(id){
          card_body(plotOutput(ns("metacoord")), padding = body_padding),
          card_footer(layout_columns(downloadButton(ns("save_metacoord"), label="", style = dl_button_style),
                                     numericInput(ns("sig_thres"), "Significance Threshold", value=0.8, min=0, max=1, step=0.01),
-                                    numericInput(ns("steps"), "Intervals", value=120, min=1, max=3000, step=10))
-         )
+                                    numericInput(ns("steps"), "Intervals", value=120, min=1, max=3000, step=10)))
     ),
     layout_column_wrap(
       width = 1/2,
       card(full_screen = TRUE,
            card_body(plotOutput(ns("gene_density")), padding = body_padding),
            card_footer(layout_columns(downloadButton(ns("save_gene_density"), label="", style = dl_button_style),
-                                      numericInput(ns("density_plots_maxn"), "Max Number of Plots", value=20, min=0, max=100, step=1))
-                       )
+                                      numericInput(ns("density_plots_maxn"), "Max Number of Plots", value=20, min=0, max=100, step=1)))
       ),
       card(full_screen = TRUE,
            card_body(plotOutput(ns("gene_swarm")), padding = body_padding),
            card_footer(layout_columns(downloadButton(ns("save_gene_swarm"), label="", style = dl_button_style),
-                                      numericInput(ns("swarm_plots_maxn"), "Max Number of Plots", value=20, min=0, max=100, step=1))
-                       )
+                                      numericInput(ns("swarm_plots_maxn"), "Max Number of Plots", value=20, min=0, max=100, step=1)))
       )
-    ),
+    )
   )
 }
 
