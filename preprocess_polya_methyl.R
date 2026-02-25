@@ -34,8 +34,9 @@ get_metadata_dt <- function(metadata_path){
   metadata_dt <- fread(metadata_path, check.names = TRUE)
   expected_cols <- c("Cell.line", "Virus", "Time", "Group", "Sample_ID", "Study", "polya_path", "m6a_path", "m5c_path")
   
-  if (!all(expected_columns %in% colnames(seq_metadata))){
-    pprint("metadata file does not contain expected columns ", expected_cols)
+  if (!all(expected_cols %in% colnames(metadata_dt))){
+    print("metadata file does not contain expected columns:")
+    print(expected_cols)
     stop()
   }
   return (metadata_dt)
