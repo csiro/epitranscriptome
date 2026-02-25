@@ -173,7 +173,7 @@ preprocess_methyl <- function(metadata_dt, sample_list, coverage_thres = 0){
     cat("Reading", m6a_file, "...\n")
     m6a_dt <- fread(m6a_file, check.names = TRUE)
     
-    m6a_dt <- prepare_dt(m6a_dt)
+    m6a_dt <- prepare_methyl_dt(m6a_dt)
     
     if (nrow(m6a_dt) > 0){
       m6a_dt <- m6a_dt[coverage > coverage_thres, ]
@@ -187,7 +187,7 @@ preprocess_methyl <- function(metadata_dt, sample_list, coverage_thres = 0){
     cat("Reading", m5c_file, "...\n")
     m5c_dt <- fread(m5c_file, check.names = TRUE)
     
-    m5c_dt <- prepare_dt(m5c_dt)
+    m5c_dt <- prepare_methyl_dt(m5c_dt)
     
     if (nrow(m5c_dt) > 0){
       m5c_dt <- m5c_dt[coverage > coverage_thres, ]
