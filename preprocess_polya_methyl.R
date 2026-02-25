@@ -150,6 +150,7 @@ prepare_methyl_dt <- function(dt){
   
   if (!all(expected_columns %in% colnames(dt))){
     print("incoming methyl data table does not have the expected columns")
+    print(expected_columns)
   } else {
     # drop columns we will be extracting from the transcript==contig field
     ret <- dt[, c("gene_id", "gene_name", "transcript_biotype" ) := NULL]
