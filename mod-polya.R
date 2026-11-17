@@ -108,10 +108,12 @@ polya_Server <- function(id, rvals){
                               alpha = 0.5) +
                ggtitle("PolyA Length Histogram")
 
-        for (s in unique(dt$sample_label)){
-          pic <- pic + geom_vline(data = dt[sample_label == s],
-                                  aes(xintercept = mean(polya_length), color=sample_label))
-        }
+        # mean length line per sample. Needs one row per sample as its data:
+        # with the per-read data, aes(xintercept = mean(...)) would be recycled
+        # into one identical line per read.
+        sample_means <- dt[, .(mean_polya_length = mean(polya_length)), by = sample_label]
+        pic <- pic + geom_vline(data = sample_means,
+                                aes(xintercept = mean_polya_length, color = sample_label))
         pic
       })
 

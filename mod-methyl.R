@@ -30,6 +30,33 @@ methyl_UI <- function(id){
   )
 }
 
+# Transcript structure annotations for the per-transcript methylation plots:
+# rug ticks at the upstream exon junctions, a thin line along the whole
+# transcript, a thick line over the CDS, and 5' UTR / CDS / 3' UTR labels,
+# all at height annot_y.
+# These are built from one row per transcript (and per junction) rather than
+# the per-site data, otherwise each annotation is drawn once per site.
+transcript_annotation_layers <- function(dt, annot_y, fontsize){
+  # keep the facet columns so the annotations land in the right panels
+  tx <- unique(dt[, .(transcript_id, transcript_type, tx_end, cds_start, cds_end)])
+  junctions <- unique(dt[, .(transcript_id, transcript_type, junction = position - up_junc_dist)])
+  label_size <- fontsize / .pt
+
+  list(
+    geom_rug(data = junctions, aes(x = junction), sides = "b", inherit.aes = FALSE),
+    geom_segment(data = tx, aes(x = 0, xend = tx_end, y = annot_y, yend = annot_y),
+                 linewidth = 0.2, inherit.aes = FALSE),
+    geom_segment(data = tx, aes(x = cds_start, xend = cds_end, y = annot_y, yend = annot_y),
+                 linewidth = 2, inherit.aes = FALSE),
+    geom_label(data = tx, aes(x = (cds_start + (cds_end - cds_start)/2), y = annot_y),
+               label = "CDS", color = "black", size = label_size, fontface = "bold", inherit.aes = FALSE),
+    geom_label(data = tx, aes(x = cds_start/2, y = annot_y),
+               label = "5' UTR", color = "black", size = label_size, fontface = "bold", inherit.aes = FALSE),
+    geom_label(data = tx, aes(x = (cds_end + (tx_end - cds_end)/2), y = annot_y),
+               label = "3' UTR", color = "black", size = label_size, fontface = "bold", inherit.aes = FALSE)
+  )
+}
+
 methyl_server <- function(id, rvals){
   moduleServer(
     id,
@@ -129,18 +156,13 @@ methyl_server <- function(id, rvals){
         }
         dt <- dt[gene_id %in% rvals$genes]
 
-        segment_y <- -max(dt$rolling_meth_density_normed) / 5
-        label_y <- -max(dt$rolling_meth_density_normed) / 5
+        # transcript annotations sit below the density points
+        annot_y <- -max(dt$rolling_meth_density_normed) / 5
 
         ggplot(dt,
                aes(x = position, y = rolling_meth_density_normed, color = sample_label)) +
           geom_point() +
-          geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
-          geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 0.2) +
-          geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 2) +
-          geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
-          geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
-          geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
+          transcript_annotation_layers(dt, annot_y, rvals$plot_fontsize) +
           facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
           ggtitle(paste0(rvals$meth_type, " Rolling Average Methylation Density")) +
           theme_light(base_size = rvals$plot_fontsize)
@@ -163,20 +185,15 @@ methyl_server <- function(id, rvals){
         }
         dt <- dt[gene_id %in% rvals$genes]
 
-        # the categorical axes are plotted on y=1 and y=2 (y=3...)
-        segment_y <- 0.5
-        label_y <- 0.5
+        # the categorical axes are plotted on y=1 and y=2 (y=3...),
+        # so the transcript annotations go just below at y=0.5
+        annot_y <- 0.5
 
         ggplot(dt,
                aes(x = position, y = sample_label, color = methylated_cat)) +
           geom_beeswarm(size = 1, cex = 1, priority = "density") +
           scale_color_brewer(palette = "Set1") +
-          geom_rug(aes(x = position - up_junc_dist, y = NULL, color = NULL), sides = "b") +
-          geom_segment(aes(x = 0, xend = tx_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 0.2) +
-          geom_segment(aes(x = cds_start, xend = cds_end, y = segment_y, yend = segment_y, color = NULL), linewidth = 2) +
-          geom_label(aes(x = (cds_start + (cds_end - cds_start)/2), y = label_y), label = "CDS", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
-          geom_label(aes(x = cds_start/2, y = label_y), label = "5' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
-          geom_label(aes(x = (cds_end + (tx_end - cds_end)/2), y = label_y), label = "3' UTR", color = "black", size = rvals$plot_fontsize / .pt, fontface = "bold") +
+          transcript_annotation_layers(dt, annot_y, rvals$plot_fontsize) +
           facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
           ggtitle(paste0(rvals$meth_type, " Methylation Sites")) +
           theme_light(base_size = rvals$plot_fontsize)
