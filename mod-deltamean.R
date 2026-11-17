@@ -26,14 +26,14 @@ deltamean_server <- function(id, rvals){
       # out of one dataset, or files from different runs).
       # validate() stops here with a message shown in place of the plot.
       sample_pair <- reactive({
-        validate(
+        shiny::validate(
           need(nrow(rvals$polya_subset) > 0, "No PolyA data (check the file input and filters)"),
           need(nrow(rvals$methyl_subset) > 0, "No methylation data (check the file input and filters)")
         )
         # sort() should place the "Control" label before the "Infected" label
         shared <- sort(intersect(unique(rvals$polya_subset$sample_label),
                                  unique(rvals$methyl_subset$sample_label)))
-        validate(
+        shiny::validate(
           need(length(shared) >= 2,
                paste0("Need at least two samples present in both the PolyA and methylation data (shared: ",
                       if (length(shared) > 0) paste(shared, collapse = ", ") else "none",
@@ -79,7 +79,7 @@ deltamean_server <- function(id, rvals){
         sample_desc <- sample_pair()
         dt <- get_summary_dt(sample_desc)
 
-        validate(
+        shiny::validate(
           need(nrow(dt) > 0, "No transcripts in common between the PolyA and methylation data")
         )
         
