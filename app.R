@@ -1,16 +1,22 @@
+# conflicted first: using a function name that more than one attached package
+# exports is then an error (listing the candidates) rather than silently
+# getting whichever package was attached last. Resolve any that come up with
+# conflicts_prefer(pkg::fn) below the library() calls.
+library(conflicted)
+
 library(shiny)
 library(bslib)
-library(svglite)
-# NOTE: don't library(jsonlite) - its validate(txt) masks shiny::validate().
-# We only need fromJSON, so it's called as jsonlite::fromJSON below.
 library(data.table)
 library(plotly)
-library(RColorBrewer)
-library(DT)
 library(ggplot2)
 library(grid)
 library(ggbeeswarm)
-library(readr)
+
+# Also required, but not attached (used via pkg:: or by other packages):
+#   jsonlite     - jsonlite::fromJSON for the config (attaching it masks shiny::validate)
+#   readr        - readr::read_csv for the gene list upload
+#   svglite      - used by ggsave() for .svg plot export
+#   RColorBrewer - used by ggplot2's brewer/distiller colour scales
 
 # global config file, TODO: there is not much happening with this config,
 # either expand to more defaults or remove entirely

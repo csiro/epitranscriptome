@@ -107,7 +107,7 @@ InFilter_Server <- function(id, rvals){
       
       # upload a gene list: select those genes
       observeEvent(input$gene_list, {
-        gene_list <- colnames(read_csv(input$gene_list$datapath, show_col_types = FALSE))
+        gene_list <- colnames(readr::read_csv(input$gene_list$datapath, show_col_types = FALSE))
         updateSelectizeInput(session, "genes", choices = genes_for_types(NULL),
                              selected = gene_list, server = TRUE)
       })
