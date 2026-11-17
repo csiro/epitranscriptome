@@ -70,23 +70,26 @@ methyl_server <- function(id, rvals){
         if (nrow(dt) > 0){
           metacoord_breaks <- seq(0, 3, steps)
           
-          # add a new categorical interval label based on metacoordinate
-          out_ratio <- dt[, metacoord_interval := cut(transcript_metacoordinate, 
-                                                      metacoord_breaks, 
-                                                      include.lowest = TRUE, 
-                                                      right = TRUE, 
-                                                      labels = FALSE)]
-          
-          # methylated bool based on probability threshold
-          out_ratio <- out_ratio[, methylated := ifelse( (probability >= prob_thres), 1, 0)]
-          
-          # aggregate by metacoordinate, sample_label (ie. over all contigs)
-          out_ratio <- out_ratio[, .(n = .N, sig = sum(methylated), metacoordinate = mean(transcript_metacoordinate)), by = .(metacoord_interval, sample_label)]
-          
+          # NOTE: dt is a reference to the shared rvals$methyl_subset, so we must
+          # not add/overwrite columns on it with := (that would silently change
+          # the data seen by the other plots, eg. overwrite `methylated`).
+          # Instead, bin and threshold inside a single grouped aggregation,
+          # which returns a new (small) table and leaves dt untouched.
+          out_ratio <- dt[, .(n = .N,
+                              # sites called significant at this plot's threshold
+                              sig = sum(probability >= prob_thres),
+                              metacoordinate = mean(transcript_metacoordinate)),
+                          by = .(metacoord_interval = cut(transcript_metacoordinate,
+                                                          metacoord_breaks,
+                                                          include.lowest = TRUE,
+                                                          right = TRUE,
+                                                          labels = FALSE),
+                                 sample_label)]
+
           # throw out any NA rows
           out_ratio <- na.omit(out_ratio)
-          
-          out_ratio <- out_ratio[, metacoord_sig_ratio := sig / n, by = .(metacoord_interval, sample_label)]
+
+          out_ratio[, metacoord_sig_ratio := sig / n]
         }
         return (out_ratio)
       }
