@@ -40,22 +40,6 @@ polya_Server <- function(id, rvals){
       
       ns <- session$ns
       
-      # plots are saved in these reactive values
-      pics <- reactiveValues(
-        polya_histogram = NULL,
-        polya_boxplot = NULL,
-        polya_swarm = NULL,
-        polya_summary = NULL
-      )
-      
-      save_pic <- function(file, pic){
-        return (ggsave(file, 
-                        plot=pic, 
-                        width=rvals$plot_width, 
-                        height=rvals$plot_height,
-                        units="mm"))
-      }
-      
       dt_summary <- function(contig_count_thres, n_to_plot){
         dt <- rvals$polya_subset
         if (nrow(dt) > 0){
@@ -106,146 +90,109 @@ polya_Server <- function(id, rvals){
         }
       })
       
+      # Each plot is built (with its legend) in a reactive. The on-screen
+      # render strips the legend (there is a shared legend strip at the top),
+      # and the download handler saves the reactive's current plot as-is.
+
+      plot_histogram <- reactive({
+        dt <- rvals$polya_subset
+        if (nrow(dt) == 0){
+          return (message_plot("(No PolyA data)", rvals$plot_fontsize))
+        }
+        pic <- ggplot() +
+               theme_light(base_size = rvals$plot_fontsize) +
+               geom_histogram(data = dt,
+                              aes(x = polya_length, color = sample_label, fill = sample_label),
+                              bins = 40,
+                              position = "dodge",
+                              alpha = 0.5) +
+               ggtitle("PolyA Length Histogram")
+
+        for (s in unique(dt$sample_label)){
+          pic <- pic + geom_vline(data = dt[sample_label == s],
+                                  aes(xintercept = mean(polya_length), color=sample_label))
+        }
+        pic
+      })
+
       output$histogram <- renderPlot({
-        dt <- rvals$polya_subset
-        if (nrow(dt) > 0){
-          pic <- ggplot() +
-                 theme_light(base_size = rvals$plot_fontsize) +
-                 geom_histogram(data = dt,
-                                aes(x = polya_length, color = sample_label, fill = sample_label),
-                                #fill = "white",
-                                bins = 40,
-                                position = "dodge",
-                                alpha = 0.5) +
-                 ggtitle("PolyA Length Histogram")
-          
-          for (s in unique(dt$sample_label)){
-            pic <- pic + geom_vline(data = dt[sample_label == s],
-                                    aes(xintercept = mean(polya_length), color=sample_label))
-          }
-          
-          # save the pic now for download
-          pics$polya_histogram <- pic
-          
-          # remove the legend for local display
-          pic <- pic + theme(legend.position="none")
-          pic
-        }
+        plot_histogram() + theme(legend.position = "none")
       })
-      
-      output$save_histogram <- downloadHandler(
-        filename <- function(){
-          return (paste0("polya_histogram", rvals$save_plot_type))
-        },
-        content <- function(file){
-          save_pic(file, pics$polya_histogram)
+
+      output$save_histogram <- plot_download("polya_histogram", plot_histogram, rvals)
+
+      plot_boxplot <- reactive({
+        dt <- rvals$polya_subset
+        if (nrow(dt) == 0){
+          return (message_plot("(No PolyA data)", rvals$plot_fontsize))
         }
-      )
-      
-      # output$DTsummary <- DT::renderDataTable(
-      #   rvals$polya_subset[, .(read_count = .N, mean_polyA_length = mean(polya_length), var_polya_length = var(polya_length)), by = .(sample_label)]
-      # )
-      
+        ggplot() +
+          theme_light(base_size = rvals$plot_fontsize) +
+          geom_boxplot(data = dt,
+                       aes(x = polya_length,
+                           y = sample_label,
+                           color = sample_label,
+                           fill = sample_label),
+                       alpha = 0.5) +
+          facet_wrap(vars(transcript_type), ncol = 4) +
+          theme(axis.text.y = element_blank(),
+                axis.ticks.y = element_blank(),
+                axis.title.y = element_blank()) +
+          ggtitle("PolyA Lengths per Transcript Type")
+      })
+
       output$box <- renderPlot({
-        dt <- rvals$polya_subset
-        if (nrow(dt) > 0){
-          pic <- ggplot() +
-                 theme_light(base_size = rvals$plot_fontsize) +
-                 geom_boxplot(data = dt,
-                              aes(x = polya_length, 
-                                  y = sample_label, 
-                                  color = sample_label, 
-                                  fill = sample_label),
-                              alpha = 0.5) + 
-                 facet_wrap(vars(transcript_type), ncol = 4) + 
-                 theme(axis.text.y = element_blank(), 
-                       axis.ticks.y = element_blank(), 
-                       axis.title.y = element_blank()) +
-                ggtitle("PolyA Lengths per Transcript Type")
-          
-          # save it with legend
-          pics$polya_boxplot <- pic
-          
-          # remove the legend for the page
-          pic <- pic + theme(legend.position="none")
-          pic
-        }
+        plot_boxplot() + theme(legend.position = "none")
       })
-      
-      output$save_boxplot <- downloadHandler(
-        filename <- function(){
-          return (paste0("polya_boxplot", rvals$save_plot_type))
-        },
-        content <- function(file){
-          save_pic(file, pics$polya_boxplot)
+
+      output$save_boxplot <- plot_download("polya_boxplot", plot_boxplot, rvals)
+
+      plot_swarm <- reactive({
+        dt <- rvals$polya_subset
+        if ((nrow(dt) == 0) || (length(unique(dt$transcript_id)) >= input$swarm_maxn)){
+          return (message_plot(paste0("(Waiting for no more than ", input$swarm_maxn, " transcripts)"),
+                               rvals$plot_fontsize))
         }
-      )
-      
+        ggplot() +
+          theme_light(base_size = rvals$plot_fontsize) +
+          geom_beeswarm(data = dt,
+                        aes(x = polya_length,
+                            y = sample_label,
+                            color = sample_label)) +
+          facet_wrap(~ transcript_id + transcript_type,
+                     ncol = 4,
+                     labeller = label_value) +
+          ggtitle("Raw PolyA Lengths per Transcript")
+      })
+
       output$swarm <- renderPlot({
-        dt <- rvals$polya_subset
-        if ((nrow(dt) > 0) && (length(unique(dt$transcript_id)) < input$swarm_maxn)){
-          pic <- ggplot() +
-                 theme_light(base_size = rvals$plot_fontsize) +
-                 geom_beeswarm(data = dt,
-                               aes(x = polya_length, 
-                                   y = sample_label, 
-                                   color = sample_label)) +
-                 facet_wrap(~ transcript_id + transcript_type, 
-                            ncol = 4, 
-                            labeller = label_value) +
-                 ggtitle("Raw PolyA Lengths per Transcript")
-          
-          pics$polya_swarm <- pic
-          
-          pic <- pic + theme(legend.position="none")
-          pic
-        } else {
-          pic <- ggplot() +
-                 theme_light(base_size = rvals$plot_fontsize) +
-                 ggtitle(paste0("(Waiting for no more than ", input$swarm_maxn, " transcripts)"))
-          pic
-        }
+        plot_swarm() + theme(legend.position = "none")
       })
-      
-      output$save_swarm <- downloadHandler(
-        filename <- function(){
-          return (paste0("polya_swarm", rvals$save_plot_type))
-        },
-        content <- function(file){
-          save_pic(file, pics$polya_swarm)
-        }
-      )
-      
-      output$box_summary <- renderPlot({
+
+      output$save_swarm <- plot_download("polya_swarm", plot_swarm, rvals)
+
+      plot_summary <- reactive({
         dt <- dt_summary(input$contigs_thres, input$box_maxn)
-        if (nrow(dt) > 0){
-          pic <- ggplot() +
-                 theme_light(base_size = rvals$plot_fontsize) +
-                 geom_boxplot(data = dt,
-                              aes(x = polya_length,
-                                  y = transcript_id, 
-                                  color = sample_label, 
-                                  fill = sample_label),
-                              alpha = 0.5) + 
-                 facet_wrap(vars(transcript_type), ncol = 4) +
-                 #scale_fill_brewer(palette="Dark2")
-                 ggtitle("Top Mean Length Delta Transcripts")
-          
-          pics$polya_summary <- pic
-          
-          pic <- pic + theme(legend.position="none")
-          pic
+        if (nrow(dt) == 0){
+          return (message_plot("(Need PolyA data for at least two samples)", rvals$plot_fontsize))
         }
+        ggplot() +
+          theme_light(base_size = rvals$plot_fontsize) +
+          geom_boxplot(data = dt,
+                       aes(x = polya_length,
+                           y = transcript_id,
+                           color = sample_label,
+                           fill = sample_label),
+                       alpha = 0.5) +
+          facet_wrap(vars(transcript_type), ncol = 4) +
+          ggtitle("Top Mean Length Delta Transcripts")
       })
-      
-      output$save_summary <- downloadHandler(
-        filename <- function(){
-          return (paste0("polya_summary", rvals$save_plot_type))
-        },
-        content <- function(file){
-          save_pic(file, pics$polya_summary)
-        }
-      )
+
+      output$box_summary <- renderPlot({
+        plot_summary() + theme(legend.position = "none")
+      })
+
+      output$save_summary <- plot_download("polya_summary", plot_summary, rvals)
     }
   )
 }

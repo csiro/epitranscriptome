@@ -20,18 +20,6 @@ deltamean_server <- function(id, rvals){
       
       ns <- session$ns
       
-      pics <- reactiveValues(
-        deltamean = NULL
-      )
-      
-      save_pic <- function(file, pic){
-        return (ggsave(file, 
-                       plot=pic, 
-                       width=rvals$plot_width, 
-                       height=rvals$plot_height,
-                       units="mm"))
-      }
-      
       get_summary_dt <- function(){
         
         print(paste0("doing the methyl v polya summary with ", rvals$meth_type))
@@ -56,50 +44,46 @@ deltamean_server <- function(id, rvals){
       #   plotlyOutput(ns("scatter"), height = "800")
       # })
       
-      output$scatter <- renderPlotly({
-        
+      # The ggplot is built in a reactive: plotly displays it, and the download
+      # handler saves the current version. NULL when there is nothing to plot.
+      plot_deltamean <- reactive({
+
         dt <- get_summary_dt()
-        
-        if (nrow(dt) > 0){
-          sample_desc <- sort(unique(rvals$polya_subset[, sample_label]))
-          this_mld_scale <- mean(abs(dt[, mean_length_delta])) + sqrt(var(abs(dt[, mean_length_delta])))
-          print(paste0("this mld scale = ", this_mld_scale))
-          if (!is.na(this_mld_scale) & this_mld_scale > rvals$mld_scale)
-          {
-            rvals$mld_scale <- this_mld_scale
-          }
-          
-          fig <- ggplot(dt, aes(x = get(paste0(sample_desc[[1]], ".x")),
-                                y = get(paste0(sample_desc[[2]], ".x")),
-                                text = paste0(transcript_id, " : ", mean_length_delta),
-                                color = mean_length_delta)) +
-                 geom_point(size = 0.4) + 
-                 scale_color_distiller(type = "div",
-                                       palette = "RdBu",
-                                       limits = c(-rvals$mld_scale, rvals$mld_scale)) +
-                 annotate("segment", x = 0, xend = 0.3, y = 0, yend = 0.3, color = "black", linewidth = 0.2) +
-                 xlab(paste0(sample_desc[[1]], " ", rvals$meth_type, " density")) + 
-                 ylab(paste0(sample_desc[[2]], " ", rvals$meth_type, " density")) + 
-                 theme_dark(base_size = rvals$plot_fontsize)
-          
-          # save the ggplot to save
-          pics$deltamean <- fig
-          
-          # but send the plot through plotly to display
+
+        if (nrow(dt) == 0){
+          return (NULL)
+        }
+        sample_desc <- sort(unique(rvals$polya_subset[, sample_label]))
+        this_mld_scale <- mean(abs(dt[, mean_length_delta])) + sqrt(var(abs(dt[, mean_length_delta])))
+        print(paste0("this mld scale = ", this_mld_scale))
+        if (!is.na(this_mld_scale) & this_mld_scale > rvals$mld_scale)
+        {
+          rvals$mld_scale <- this_mld_scale
+        }
+
+        ggplot(dt, aes(x = get(paste0(sample_desc[[1]], ".x")),
+                       y = get(paste0(sample_desc[[2]], ".x")),
+                       text = paste0(transcript_id, " : ", mean_length_delta),
+                       color = mean_length_delta)) +
+          geom_point(size = 0.4) +
+          scale_color_distiller(type = "div",
+                                palette = "RdBu",
+                                limits = c(-rvals$mld_scale, rvals$mld_scale)) +
+          annotate("segment", x = 0, xend = 0.3, y = 0, yend = 0.3, color = "black", linewidth = 0.2) +
+          xlab(paste0(sample_desc[[1]], " ", rvals$meth_type, " density")) +
+          ylab(paste0(sample_desc[[2]], " ", rvals$meth_type, " density")) +
+          theme_dark(base_size = rvals$plot_fontsize)
+      })
+
+      output$scatter <- renderPlotly({
+        fig <- plot_deltamean()
+        if (!is.null(fig)){
           toWebGL(ggplotly(fig, tooltip = "text"))
-                        
         }
       })
-      
-      output$save_deltamean <- downloadHandler(
-        filename <- function(){
-          return (paste0("meth_v_polyamean", rvals$save_plot_type))
-        },
-        content <- function(file){
-          save_pic(file, pics$deltamean)
-        }
-      )
-      
-    }   
+
+      output$save_deltamean <- plot_download("meth_v_polyamean", plot_deltamean, rvals)
+
+    }
   )
 }
