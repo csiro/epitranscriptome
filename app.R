@@ -16,6 +16,7 @@ library(readr)
 config_file <- "config.json"
 config <- fromJSON(config_file)
 
+source("plot-helpers.R")
 source("mod-inputfile.R")
 source("mod-plotexport.R")
 source("mod-filter.R")

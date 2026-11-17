@@ -97,18 +97,7 @@ methyl_server <- function(id, rvals){
       output$legend <- renderPlot({
         if (nrow(rvals$methyl) > 0)
         {
-          pic <- ggplot(rvals$methyl, aes(sample_label, fill = sample_label)) +
-                 geom_bar(alpha = 0.5) + 
-                 theme_light(base_size = rvals$plot_fontsize)
-
-          
-          # stealing the legend (stolen from https://stackoverflow.com/questions/12041042/how-to-plot-just-the-legends-in-ggplot2/12041779#12041779)
-          tmp <- ggplot_gtable(ggplot_build(pic))
-          leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-          legend <- tmp$grobs[[leg]]
-          
-          grid.newpage()
-          grid.draw(legend)
+          draw_sample_legend(rvals$methyl$sample_label, rvals$plot_fontsize)
         }
       })
       
