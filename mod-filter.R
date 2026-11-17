@@ -21,6 +21,19 @@ InFilter_UI <- function(id){
   )
 }
 
+# NOTE on data.table reference semantics:
+# The tables in rvals (polya, methyl, polya_subset, methyl_subset) may share
+# memory - eg. with no filter set, polya_subset *is* rvals$polya. Never modify
+# them in place (:=, set*(), setorder, ...). Subset or aggregate into a new
+# table first. In-place changes leak into the shared tables, and Shiny can't
+# see them (reassigning a table that is identical() to the old value doesn't
+# notify anything), so plots silently go stale.
+
+# above this many selected genes, the transcript selector is not populated
+MAX_GENES_FOR_TRANSCRIPTS <- 50
+
+# delay (ms) to let a burst of input changes settle before re-filtering
+FILTER_DEBOUNCE_MS <- 300
 
 InFilter_Server <- function(id, rvals){
   moduleServer(
@@ -29,181 +42,153 @@ InFilter_Server <- function(id, rvals){
       
       ns <- session$ns
       
-      get_all_transcript_types <- function(){
-        ttypes <- list()
-        if (nrow(rvals$polya) > 0){
-          ttypes <- unique(rvals$polya$transcript_type)
-        }
-        if (nrow(rvals$methyl) > 0){
-          ttypes <- unique(append(ttypes, rvals$methyl$transcript_type))
-        }
-        return (ttypes)
+      # NULL (cleared selectize) -> empty list, meaning "no filter"
+      or_empty <- function(x){ if (is.null(x)) list() else x }
+      # a usable numeric threshold (a cleared numericInput gives NA)
+      has_value <- function(x){ length(x) == 1 && !is.na(x) }
+      
+      ##########################################################################
+      # Choices for the selection inputs, from whichever data is loaded.
+      # Only called from observeEvent handlers, so they add no dependencies.
+      
+      all_transcript_types <- function(){
+        unique(c(rvals$polya$transcript_type, rvals$methyl$transcript_type))
       }
       
-      get_all_genes <- function(){
-        gene_list <- list()
-        if (nrow(rvals$polya) > 0){
-          gene_list <- unique(rvals$polya$gene_id)
+      # genes having any of the transcript types (all genes if types is empty)
+      genes_for_types <- function(types){
+        pick <- function(dt){
+          if (nrow(dt) == 0) NULL
+          else if (length(types) == 0) dt$gene_id
+          else dt[transcript_type %in% types, gene_id]
         }
-        if (nrow(rvals$methyl) > 0){
-          gene_list <- unique(append(gene_list, rvals$methyl$gene_id))
+        unique(c(pick(rvals$polya), pick(rvals$methyl)))
+      }
+      
+      transcripts_for_genes <- function(genes){
+        pick <- function(dt){
+          if (nrow(dt) == 0) NULL else dt[gene_id %in% genes, transcript_id]
         }
-        return (gene_list)
+        unique(c(pick(rvals$polya), pick(rvals$methyl)))
       }
       
-      filter_polya <- function(){
-        print("in filter_polya")
-        isolate({
-          dt <- copy(rvals$polya)
-          if (nrow(dt) > 0){
-            if (length(rvals$transcripts) > 0){
-              dt <- dt[transcript_id %in% rvals$transcripts]
-            } else if (length(rvals$genes) > 0){
-              dt <- dt[gene_id %in% rvals$genes]
-            } else if (length(rvals$transcript_types) > 0){
-              dt <- dt[transcript_type %in% rvals$transcript_types]
-            }
-          }
-          rvals$polya_subset <- dt 
-        })
-      }
+      ##########################################################################
+      # Keep the selection inputs' choices consistent. These observers only
+      # update the UI; the filtering itself happens in the reactives below.
+      # (selected = character(0) clears a selection; NULL would leave it as is)
       
-      # some copy pasta here ... unless there's some way of passing 
-      # rvals$DT by reference?
-      filter_methyl <- function(){
-        print("in filter_methyl")
-        isolate({
-          dt <- copy(rvals$methyl)
-          if (nrow(dt) > 0){
-            dt <- dt[meth_type == input$meth_type]
-            dt <- dt[site_count > input$sites_thres]
-            dt <- dt[max_gap < input$gap_thres]
-            if (length(rvals$transcripts) > 0){
-              dt <- dt[transcript_id %in% rvals$transcripts]
-            } else if (length(rvals$genes) > 0){
-              dt <- dt[gene_id %in% rvals$genes]
-            } else if (length(rvals$transcript_types) > 0){
-              dt <- dt[transcript_type %in% rvals$transcript_types]
-            }
-            # make a categorical out of the methylated field
-            dt$methylated_cat <- factor(dt$methylated, levels=c(1,0), labels=c("methylated", "unmethylated"))
-          }
-          rvals$methyl_subset <- dt 
-          #print(reactiveValuesToList(rvals))
-          #print(nrow(rvals$methyl_subset))
-        })
-      }
-      
-      observeEvent(input$meth_type, {
-        print("meth type selected")
-        rvals$meth_type <- input$meth_type
-        filter_methyl()
+      # whole new file(s): reset all the selections
+      observeEvent(list(rvals$polya, rvals$methyl), {
+        updateSelectizeInput(session, "transcript_type", choices = all_transcript_types(),
+                             selected = character(0), server = TRUE)
+        updateSelectizeInput(session, "genes", choices = genes_for_types(NULL),
+                             selected = character(0), server = TRUE)
+        updateSelectizeInput(session, "transcripts", choices = character(0),
+                             selected = character(0), server = TRUE)
       })
       
-      observeEvent(input$sites_thres, {
-        filter_methyl()
-      })
-      
-      observeEvent(input$gap_thres, {
-        filter_methyl()
-      })
-      
+      # transcript types changed: restrict the gene choices to those types
       observeEvent(input$transcript_type, {
-        print("transcript type selected:")
-        rvals$transcript_types <- if (is.null(input$transcript_type)){ list() } else { input$transcript_type }
-        print(rvals$transcript_types)
-        
-        # subset the gene selectize to the transcript type
-        gene_list <- list()
-        if (length(rvals$transcript_types) == 0){
-          gene_list <- get_all_genes()
-        } else {
-          if (nrow(rvals$polya) > 0){
-            gene_list <- unique(rvals$polya[transcript_type %in% rvals$transcript_types]$gene_id)
-          }
-          if (nrow(rvals$methyl) > 0){
-            gene_list <- unique(append(gene_list, rvals$methyl[transcript_type %in% rvals$transcript_types]$gene_id))
-          } 
-        }
-        updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
-        filter_polya()
-        filter_methyl()
-      }, ignoreNULL = FALSE)
+        updateSelectizeInput(session, "genes", choices = genes_for_types(input$transcript_type),
+                             selected = character(0), server = TRUE)
+      }, ignoreNULL = FALSE, ignoreInit = TRUE)
       
-      # for the genes selectizeInput, we want to be able to detect when all 
-      # entries have been cleared == NULL
+      # genes changed: only offer transcripts when there are just a few genes
       observeEvent(input$genes, {
-        print("genes selected:")
-        rvals$genes <- if (is.null(input$genes)){ list() } else { input$genes }
-        print(rvals$genes)
-        
-        # only populate the transcript selectize if we have less than a few genes
-        if ((length(rvals$genes) < 50) && (length(rvals$genes) > 0)){
-          transcript_list <- list()
-          
-          if (nrow(rvals$polya) > 0){
-            transcript_list <- unique(rvals$polya[gene_id %in% rvals$genes]$transcript_id)
-          }
-          
-          if (nrow(rvals$methyl) > 0){
-            transcript_list <- unique(append(transcript_list, rvals$methyl[gene_id %in% rvals$genes]$transcript_id))
-          }
-          updateSelectizeInput(session, "transcripts", choices=transcript_list, selected=NULL, server = TRUE)
+        n_genes <- length(input$genes)
+        choices <- if (n_genes > 0 && n_genes < MAX_GENES_FOR_TRANSCRIPTS){
+          transcripts_for_genes(input$genes)
         } else {
-          updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
+          character(0)
         }
-        filter_polya()
-        filter_methyl()
-      }, ignoreNULL = FALSE)
+        updateSelectizeInput(session, "transcripts", choices = choices,
+                             selected = character(0), server = TRUE)
+      }, ignoreNULL = FALSE, ignoreInit = TRUE)
       
-      # upload a gene list
+      # upload a gene list: select those genes
       observeEvent(input$gene_list, {
-        print("gene list touched")
-        gl_file <- input$gene_list$datapath
-        gene_list <- colnames(read_csv(gl_file))
-        rvals$genes <- gene_list
-        updateSelectizeInput(session, "genes", choices=get_all_genes(), selected=gene_list, server = TRUE)
-        filter_polya()
-        filter_methyl()
+        gene_list <- colnames(read_csv(input$gene_list$datapath, show_col_types = FALSE))
+        updateSelectizeInput(session, "genes", choices = genes_for_types(NULL),
+                             selected = gene_list, server = TRUE)
       })
       
-      observeEvent(input$transcripts, {
-        print("transcripts selected:")
-        rvals$transcripts <- if (is.null(input$transcripts)){ list() } else { input$transcripts }
-        print(rvals$transcripts)
-        # every other input will cause input$transcripts to be touched, subset here
-        filter_polya()
-        filter_methyl()
-      }, ignoreNULL = FALSE)
+      ##########################################################################
+      # Filtering. The selection and thresholds are debounced, so a cascade of
+      # input changes (eg. new transcript types -> genes reset -> transcripts
+      # reset) or typing in a numeric box re-filters once, not once per step.
       
-      # whole new file(s), reset everything
+      selection <- debounce(reactive({
+        list(transcript_types = or_empty(input$transcript_type),
+             genes = or_empty(input$genes),
+             transcripts = or_empty(input$transcripts))
+      }), FILTER_DEBOUNCE_MS)
+      
+      methyl_thresholds <- debounce(reactive({
+        list(meth_type = input$meth_type,
+             sites = input$sites_thres,
+             gap = input$gap_thres)
+      }), FILTER_DEBOUNCE_MS)
+      
+      # The most specific non-empty selection wins: transcripts, then genes,
+      # then transcript types. Empty everything means no filter.
+      # No copy() needed: dt[...] returns a new table, and with no filter we
+      # deliberately share the full table (see the note at the top).
+      apply_selection <- function(dt, sel){
+        if (nrow(dt) == 0){
+          dt
+        } else if (length(sel$transcripts) > 0){
+          dt[transcript_id %in% sel$transcripts]
+        } else if (length(sel$genes) > 0){
+          dt[gene_id %in% sel$genes]
+        } else if (length(sel$transcript_types) > 0){
+          dt[transcript_type %in% sel$transcript_types]
+        } else {
+          dt
+        }
+      }
+      
+      # methylation data for the chosen methylation type and site thresholds
+      # (a cleared threshold box means no threshold)
+      methyl_base <- reactive({
+        dt <- rvals$methyl
+        if (nrow(dt) == 0){
+          return (dt)
+        }
+        th <- methyl_thresholds()
+        dt <- dt[meth_type == th$meth_type]
+        if (has_value(th$sites)){
+          dt <- dt[site_count > th$sites]
+        }
+        if (has_value(th$gap)){
+          dt <- dt[max_gap < th$gap]
+        }
+        # dt is a new table here (never rvals$methyl itself), so adding a
+        # column by reference is safe
+        dt[, methylated_cat := factor(methylated, levels = c(1, 0), labels = c("methylated", "unmethylated"))]
+        dt
+      })
+      
+      ##########################################################################
+      # Publish the results to rvals for the plot modules
+      
       observe({
-        rvals$polya
-        print("polya touched")
-        #rvals$methyl
-        ttypes <- get_all_transcript_types()
-        gene_list <- get_all_genes()
-        updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
-        updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
-        updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
-        filter_polya()
-        #filter_methyl()
+        rvals$polya_subset <- apply_selection(rvals$polya, selection())
       })
       
       observe({
-        #rvals$polya
-        rvals$methyl
-        print("methyl touched")
-        #print(summary(rvals$methyl))
-        ttypes <- get_all_transcript_types()
-        gene_list <- get_all_genes()
-        updateSelectizeInput(session, "transcript_type", choices=ttypes, selected=NULL, server = TRUE)
-        updateSelectizeInput(session, "genes", choices=gene_list, selected=NULL, server = TRUE)
-        updateSelectizeInput(session, "transcripts", choices=NULL, selected=NULL, server = TRUE)
-        #filter_polya()
-        filter_methyl()
+        rvals$methyl_subset <- apply_selection(methyl_base(), selection())
+      })
+      
+      observe({
+        sel <- selection()
+        rvals$transcript_types <- sel$transcript_types
+        rvals$genes <- sel$genes
+        rvals$transcripts <- sel$transcripts
+      })
+      
+      observe({
+        rvals$meth_type <- methyl_thresholds()$meth_type
       })
     }
   )
 }
-      
