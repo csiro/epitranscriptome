@@ -11,7 +11,7 @@ methyl_UI <- function(id){
     card(full_screen = TRUE, 
          card_body(plotOutput(ns("metacoord")), padding = body_padding),
          card_footer(layout_columns(downloadButton(ns("save_metacoord"), label="", style = dl_button_style),
-                                    numericInput(ns("sig_thres"), "Significance Threshold", value=0.8, min=0, max=1, step=0.01),
+                                    numericInput(ns("sig_thres"), "Significance Threshold", value=0.99, min=0, max=1, step=0.01),
                                     numericInput(ns("steps"), "Intervals", value=120, min=1, max=3000, step=10)))
     ),
     layout_column_wrap(
