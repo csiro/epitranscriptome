@@ -1,7 +1,8 @@
 library(shiny)
 library(bslib)
 library(svglite)
-library(jsonlite)
+# NOTE: don't library(jsonlite) - its validate(txt) masks shiny::validate().
+# We only need fromJSON, so it's called as jsonlite::fromJSON below.
 library(data.table)
 library(plotly)
 library(RColorBrewer)
@@ -14,7 +15,7 @@ library(readr)
 # global config file, TODO: there is not much happening with this config,
 # either expand to more defaults or remove entirely
 config_file <- "config.json"
-config <- fromJSON(config_file)
+config <- jsonlite::fromJSON(config_file)
 
 source("plot-helpers.R")
 source("mod-inputfile.R")
