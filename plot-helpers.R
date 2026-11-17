@@ -41,7 +41,8 @@ save_plot <- function(file, pic, rvals){
 #   basename: string, or function returning a string, for the file name
 #             (without extension; rvals$save_plot_type is appended)
 #   plot_fn:  a reactive (or function) returning the ggplot to save
-#             (NULL saves a "(Nothing to plot)" placeholder)
+#             (NULL, or stopping on validate()/req(), saves a placeholder
+#             plot with the validation message)
 #
 # The plot is (re)computed from plot_fn() at download time, so the saved file
 # always reflects the current data and inputs, even if the plot has never been
@@ -53,7 +54,13 @@ plot_download <- function(basename, plot_fn, rvals){
       paste0(name, rvals$save_plot_type)
     },
     content = function(file){
-      pic <- plot_fn()
+      # if the plot stopped on validate(need(...)) / req(), save its message
+      # as a placeholder plot rather than failing the download
+      pic <- tryCatch(plot_fn(),
+                      shiny.silent.error = function(e){
+                        msg <- conditionMessage(e)
+                        if (!nzchar(msg)) NULL else message_plot(paste0("(", msg, ")"), rvals$plot_fontsize)
+                      })
       if (is.null(pic)){
         pic <- message_plot("(Nothing to plot)", rvals$plot_fontsize)
       }
