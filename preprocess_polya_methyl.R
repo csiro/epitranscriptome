@@ -6,6 +6,21 @@ pprint <- function(...){
   print(paste0(...))
 }
 
+# Rolling mean of x over a centred window of w rows (centred as for
+# frollmean(align = "center")). Windows are truncated at the ends rather than
+# padded, so the first and last values use the rows available instead of
+# being NA or 0, and groups shorter than w get their overall mean.
+centred_rolling_mean <- function(x, w){
+  n <- length(x)
+  if (n == 0) return (numeric(0))
+  i <- seq_len(n)
+  half <- w %/% 2
+  lo <- pmax(1L, i - (w - 1L - half))
+  hi <- pmin(n, i + half)
+  cs <- c(0, cumsum(x))
+  (cs[hi + 1L] - cs[lo]) / (hi - lo + 1L)
+}
+
 # split the "contig" column into its various components in a data.table
 split_contig <- function(dt){
   if (is.data.table(dt) & "contig" %in% colnames(dt)){
@@ -239,20 +254,17 @@ preprocess_methyl <- function(metadata_dt, sample_list, coverage_thres = 0){
   methyl <- methyl[, methylated := ifelse( (probability >= prob_thres), 1, 0)]
   #methyl <- methyl[, filter := ifelse( (probability >= prob_thres), "sig", "ns")]
   
-  # window length (per row not per position) for rolling totals/averages
+  # Rolling fraction of sites methylated along each contig: the mean of
+  # `methylated` over a centred window of rolling_window_width sites (rows, not
+  # bases). Unlike methylated sites per base, this isn't diluted by gaps in the
+  # site coverage: it is (methylated per base) / (sites per base) for the
+  # window, in which the window's base span cancels out.
+  # The rows are already ordered by position within each contig (setorder above).
   rolling_window_width <- 50
-  # as far as i know, frollmean/sum/apply can only work on one column at a time, here we're building
-  # up to get a measure of the rolling densities along each contig
-  methyl <- methyl[, rolling_pos_gap := frollsum(pos_gap, rolling_window_width, fill = 0, align = "center"), by = .(contig, meth_type, sample_label)]
-  
-  methyl <- methyl[, rolling_meth_count := frollsum(methylated, rolling_window_width, fill = 0, align = "center"), by = .(contig, meth_type, sample_label)]
-  
-  methyl <- methyl[, rolling_site_count := (rolling_window_width / rolling_pos_gap)]
-  
-  methyl <- methyl[, rolling_meth_density := (rolling_meth_count / rolling_pos_gap)]
-  
-  methyl <- methyl[, rolling_meth_density_normed := (rolling_meth_count / rolling_site_count)]
-  
+  methyl <- methyl[, rolling_meth_frac := centred_rolling_mean(methylated, rolling_window_width),
+                   by = .(contig, meth_type, sample_label)]
+
+  # the whole-contig version of rolling_meth_frac.
   # use site_count rather than max(position) - min(position) or contig length - there are plenty of incomplete contigs
   methyl <- methyl[, total_meth_density := sum(methylated) / site_count, by = .(contig, meth_type, sample_label) ]
   

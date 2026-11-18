@@ -157,15 +157,23 @@ methyl_server <- function(id, rvals){
         # (no extra gene filter here: methyl_subset already has the filter
         # module's transcript/gene/type selection applied)
 
-        # transcript annotations sit below the density points
-        annot_y <- -max(dt$rolling_meth_density_normed) / 5
+        # RDS files from before the rolling_meth_frac change don't have it
+        shiny::validate(
+          need("rolling_meth_frac" %in% names(dt),
+               "This methylation RDS has no rolling_meth_frac column: regenerate it with the current preprocess_polya_methyl.R")
+        )
+
+        # transcript annotations sit below the points (at least a little below
+        # zero, even if nothing is methylated)
+        annot_y <- -max(dt$rolling_meth_frac, 0.05, na.rm = TRUE) / 5
 
         ggplot(dt,
-               aes(x = position, y = rolling_meth_density_normed, color = sample_label)) +
+               aes(x = position, y = rolling_meth_frac, color = sample_label)) +
           geom_point() +
           transcript_annotation_layers(dt, annot_y, rvals$plot_fontsize) +
           facet_wrap(~ transcript_id + transcript_type, ncol = 2, labeller = label_value) +
-          ggtitle(paste0(rvals$meth_type, " Rolling Average Methylation Density")) +
+          ylab("fraction of sites methylated (rolling)") +
+          ggtitle(paste0(rvals$meth_type, " Rolling Fraction of Sites Methylated")) +
           theme_light(base_size = rvals$plot_fontsize)
       })
 
