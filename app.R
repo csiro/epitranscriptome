@@ -49,6 +49,9 @@ ui <- page_navbar(title = "Epitranscriptome",
              methyl_UI("methyl")),
     nav_panel(title = "methylation v PolyA",
               deltamean_UI("deltamean")),
+
+    # a fix for the jump on mouse-over on the methyl tab
+    tags$head(tags$style("html { scrollbar-gutter: stable; }")),
     
     # for globally adjusting the font of the ui items
     # tags$head(tags$style('
@@ -60,7 +63,7 @@ ui <- page_navbar(title = "Epitranscriptome",
 )
 
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
   # set max "upload" size ... since we're handling the upload manually, this is
   # just making sure the UI isn't always saying things are too big
