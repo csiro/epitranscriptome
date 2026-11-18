@@ -154,7 +154,8 @@ methyl_server <- function(id, rvals){
         if (length(unique(dt$transcript_id)) >= input$density_plots_maxn){
           return (message_plot("(Too many transcripts)", rvals$plot_fontsize))
         }
-        dt <- dt[gene_id %in% rvals$genes]
+        # (no extra gene filter here: methyl_subset already has the filter
+        # module's transcript/gene/type selection applied)
 
         # transcript annotations sit below the density points
         annot_y <- -max(dt$rolling_meth_density_normed) / 5
@@ -183,7 +184,8 @@ methyl_server <- function(id, rvals){
         if (length(unique(dt$transcript_id)) >= input$swarm_plots_maxn){
           return (message_plot("(Too many transcripts)", rvals$plot_fontsize))
         }
-        dt <- dt[gene_id %in% rvals$genes]
+        # (no extra gene filter here: methyl_subset already has the filter
+        # module's transcript/gene/type selection applied)
 
         # the categorical axes are plotted on y=1 and y=2 (y=3...),
         # so the transcript annotations go just below at y=0.5

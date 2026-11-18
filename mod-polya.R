@@ -40,46 +40,59 @@ polya_Server <- function(id, rvals){
       
       ns <- session$ns
       
+      # PolyA reads for the n_to_plot transcripts (contigs) whose mean PolyA
+      # length differs most between two samples. A sample's mean on a contig
+      # only counts if it has more than contig_count_thres reads there.
+      # Stops with a validate() message when there is nothing to compare.
       dt_summary <- function(contig_count_thres, n_to_plot){
         dt <- rvals$polya_subset
-        if (nrow(dt) > 0){
-          labels <- unique(dt$sample_label)
-          
-          if (length(labels) > 1){
-            polyA_summary <- dt[, .(contig_count = .N, 
-                                    mean_polya_length = mean(polya_length)), 
-                                    by = .(contig, sample_label)]
-            # reject mean lengths with too few samples
-            polyA_summary <- polyA_summary[contig_count > contig_count_thres]
-            # re-cast so that each sample_label is its own column with the mean_polya_length values
-            polyA_summary_wide <- dcast(polyA_summary, 
-                                        contig ~ sample_label, 
-                                        value.var = 'mean_polya_length')
-            if (ncol(polyA_summary_wide) > 1)
-            {
-              # get the difference between the mean lengths for the first two samples 
-              #(we're assuming a control is in sample[[1]] ... adjust for other pair-wise comparisons)
-              # we need two columns here...
-              polyA_summary_wide <- polyA_summary_wide[, mean_length_delta := abs(get(labels[[1]]) - get(labels[[2]]))]
-              # sort
-              polyA_summary_wide <- polyA_summary_wide[order(mean_length_delta, decreasing = TRUE)]
-              differing_contigs <- polyA_summary_wide[1:n_to_plot, contig]
-              # ...ok this is awks. subset the full dataframe to the differing_contigs list
-              dt <- dt[contig %in% differing_contigs, ]
-              # now add back in the index from the list
-              dt <- dt[, ord := match(contig, differing_contigs)]
-              # and re-order
-              dt <- dt[order(ord)]
-              # and bake in the order as a factor for transcript_id
-              dt$transcript_id <- factor(dt$transcript_id, levels=rev(unique(dt$transcript_id)))
-            } else {
-              dt <- data.table()
-            }
-          } else {
-            # return an empty table
-            dt <- data.table()
-          }
-        }
+        shiny::validate(
+          need(nrow(dt) > 0, "No PolyA data (check the file input and filters)"),
+          need(length(n_to_plot) == 1 && !is.na(n_to_plot) && n_to_plot > 0,
+               "Set the Max Number of Box Plots"),
+          need(length(contig_count_thres) == 1 && !is.na(contig_count_thres),
+               "Set the Min Samples per Contig")
+        )
+
+        polyA_summary <- dt[, .(contig_count = .N,
+                                mean_polya_length = mean(polya_length)),
+                            by = .(contig, sample_label)]
+        # reject mean lengths with too few samples
+        polyA_summary <- polyA_summary[contig_count > contig_count_thres]
+
+        # Pick the two samples to compare from what survived the threshold:
+        # a sample with no contig above it gets no column in the dcast below.
+        # sort() so the choice is stable (and "Control" comes before "Infected");
+        # with more than two samples, the first two are compared.
+        labels <- sort(unique(polyA_summary$sample_label))
+        shiny::validate(
+          need(length(labels) >= 2,
+               paste0("Need at least two samples with more than ", contig_count_thres,
+                      " reads on a contig (lower the Min Samples per Contig?)"))
+        )
+
+        # re-cast so that each sample_label is its own column with the mean_polya_length values
+        polyA_summary_wide <- dcast(polyA_summary,
+                                    contig ~ sample_label,
+                                    value.var = 'mean_polya_length')
+        polyA_summary_wide[, mean_length_delta := abs(get(labels[[1]]) - get(labels[[2]]))]
+        # a contig above the threshold in only one of the two samples has no delta
+        polyA_summary_wide <- polyA_summary_wide[!is.na(mean_length_delta)]
+        shiny::validate(
+          need(nrow(polyA_summary_wide) > 0,
+               paste0("No contigs with more than ", contig_count_thres, " reads in both ",
+                      labels[[1]], " and ", labels[[2]]))
+        )
+
+        # the contigs with the largest differences, largest first
+        differing_contigs <- head(polyA_summary_wide[order(-mean_length_delta), contig], n_to_plot)
+
+        # subset the reads to those contigs, in that order
+        dt <- dt[contig %in% differing_contigs]
+        dt <- dt[order(match(contig, differing_contigs))]
+        # and bake in the order as a factor for transcript_id (reversed, so the
+        # largest difference is at the top of the y axis)
+        dt$transcript_id <- factor(dt$transcript_id, levels = rev(unique(dt$transcript_id)))
         return (dt)
       }
       
@@ -174,10 +187,8 @@ polya_Server <- function(id, rvals){
       output$save_swarm <- plot_download("polya_swarm", plot_swarm, rvals)
 
       plot_summary <- reactive({
+        # (dt_summary stops with a validate() message if there's nothing to plot)
         dt <- dt_summary(input$contigs_thres, input$box_maxn)
-        if (nrow(dt) == 0){
-          return (message_plot("(Need PolyA data for at least two samples)", rvals$plot_fontsize))
-        }
         ggplot() +
           theme_light(base_size = rvals$plot_fontsize) +
           geom_boxplot(data = dt,
